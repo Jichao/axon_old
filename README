@@ -1,0 +1,34 @@
+Welcome
+-------------------
+
+Axon is an server-side engine to build MMO game application. 
+It provide reusable basic components and architecture for game development.
+MMO game server developer should follow the design pattern and architecture,
+and custom the source code to achieve most performance and special requirement.
+
+
+Author
+-------------------
+
+Daly  dalydaijun@163.com  
+
+
+Build Axon
+--------------------
+
+Axon can be compiled and used on Linux, *BSD
+We recommend little endian architectures. Some function(byte order related)
+is not guaranteed to work on big endian machine.
+compiler recommend: g++
+
+It is as simple as:
+  % make
+
+the makefile object dependency is defined in Makefile.dep ,
+code contributor can modified this file if added/deleted source file.
+
+Copying
+--------------------
+
+Copyright (c) 2012, Dai Jun
+
