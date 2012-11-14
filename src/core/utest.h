@@ -1,6 +1,5 @@
 //
 //Purpose: Unit test macros and class
-//Created: Daly 2012-11-18
 
 
 #ifndef _AX_UTEST_H_

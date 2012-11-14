@@ -1,8 +1,6 @@
 //
 //Purpose: buffer data structure. 
 //         convenient to manipulate raw data in engine code.
-//Created: Daly 2012-11-18
-//
 
 #ifndef _AX_BUFFER_H_
 #define _AX_BUFFER_H_

@@ -1,7 +1,5 @@
 //
 //fd event poller base class
-//Created: Daly 2012-11-18
-//
 
 #ifndef _AX_FD_POLLER_H_
 #define _AX_FD_POLLER_H_

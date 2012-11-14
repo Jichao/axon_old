@@ -1,5 +1,4 @@
 // hash table with iteration ability(addition link list)
-// Created: Daly 2012-11-18
 
 #ifndef _AX_HASHMAP_H_
 #define _AX_HASHMAP_H_

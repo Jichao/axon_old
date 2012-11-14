@@ -1,5 +1,4 @@
 //string class for axon engine
-//Created: Daly 2012-11-18
 
 #ifndef _AX_STRING_H_
 #define _AX_STRING_H_

@@ -1,6 +1,5 @@
 //
 //Purpose: simple memory pool
-//Created: Daly 2012-11-18
 
 #ifndef _AX_MEM_POOL_H_
 #define _AX_MEM_POOL_H_

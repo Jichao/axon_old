@@ -1,5 +1,4 @@
 //Timer Event
-//Created: Daly 2012-11-18
 
 #include "stdheader.h"
 #include "ax_debug.h"

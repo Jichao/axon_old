@@ -1,5 +1,4 @@
 //Timer Event Manager
-//Created: Daly 2012-11-18
 
 #ifndef _AX_TIMER_H_
 #define _AX_TIMER_H_

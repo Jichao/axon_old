@@ -1,7 +1,5 @@
 //
 //Purpose: debug utilities and raw logger
-//Created:  Daly  2012-11-18
-//
 
 #ifndef _AX_DEBUG_H_
 #define _AX_DEBUG_H_

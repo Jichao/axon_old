@@ -1,5 +1,4 @@
 //simple memory pool
-//Created: Daly 2012-11-18
 
 #include "ax_debug.h"
 #include "utest.h"
