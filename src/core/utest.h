@@ -35,10 +35,10 @@ public:
 	UTest(UTestFunc* func, const char* file, const char* name);
 	void run() { func_(name_); }
 		
-	static int test_count();
+	static uint32_t test_count();
 	const char* file() { return file_; }
 	const char* name() { return name_; }
-	UTest* get_head() { return head; }
+	static UTest* get_head() { return head; }
 	static int start_test();
 
 	static uint32_t count;

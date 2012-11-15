@@ -29,6 +29,8 @@ public:
 	string_t(const char* cstr);
 	~string_t();
 
+	string_t& operator=(const string_t &rhs);
+
 	const char* c_str() const;
 	bool equal(const string_t &rhs) const;
 	bool equal(const char* cstr) const;
@@ -70,10 +72,6 @@ public:
 		}
 		return larger_.capacity_;
 	}
-
-private:
-	//disable direct assignment
-	string_t& operator=(const string_t &rhs);
 
 private:
 	union {

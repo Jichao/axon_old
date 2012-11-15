@@ -17,6 +17,7 @@ RawLogger::RawLogger()
 	memset(file_, 0, MAX_FILENAME_LEN);
 	strcpy(path_, ".");
 	strcpy(file_, "debug.log");
+	console_ = false;
 }
 
 RawLogger::RawLogger(const char* file)
@@ -25,6 +26,7 @@ RawLogger::RawLogger(const char* file)
     memset(file_, 0, MAX_FILENAME_LEN);
 	strcpy(path_, ".");
 	strcpy(file_, "debug.log");
+	console_ = false;
 }
 
 void RawLogger::set_pathroot(const char* p)
@@ -52,6 +54,11 @@ void RawLogger::fmt_time(char* buf, size_t n)
 	strftime(buf, n, "%Y/%m/%d-%H:%M:%S", tp);
 }
 
+void RawLogger::enable_console(bool s)
+{
+	console_ = s;
+}
+
 void RawLogger::vlog(const char* fmt, va_list arg)
 {
 	FILE *fp = NULL;
@@ -66,6 +73,12 @@ void RawLogger::vlog(const char* fmt, va_list arg)
 	}
 
 	fmt_time(timebuf, 64);
+	if (console_) {
+		printf("%s ", timebuf);
+		vprintf(fmt, arg);
+		printf("\n");
+	}
+
 	fprintf(fp, "%s ", timebuf);
 	vfprintf(fp, fmt, arg);
 	fprintf(fp, "\n");
@@ -101,10 +114,18 @@ void debug_watch(const char* codefile, const char* msg, ...)
 	va_list args;
 	va_start(args, msg);
 	memset(fname, 0, sizeof(fname));
-	snprintf(fname, sizeof(fname), "%s.log", codefile);
+	//temptest
+	//snprintf(fname, sizeof(fname), "%s.log", codefile);
+	snprintf(fname, sizeof(fname), "watch.log");
 	g_watch_logger.set_logfile(fname);
 	g_watch_logger.vlog(msg, args);
 	va_end(args);
+}
+
+void ax_assert(const char *expr, const char* file, const char* func, int line)
+{
+	debug_log("Assert:%s; file:%s func:%s line:%d", expr, file, func, line);
+	abort();
 }
 
 

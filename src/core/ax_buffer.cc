@@ -164,6 +164,7 @@ UTEST(buffer_t)
 	p = buf1.data();
 	UT_ASSERT(p[1] == 'b');
 	buf1.pop(3);
+	p = buf1.data();
 	UT_ASSERT(p[0] == 'd');
 	buf1.pop(100);
 	//self expand

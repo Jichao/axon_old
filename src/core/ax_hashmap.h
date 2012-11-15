@@ -35,7 +35,7 @@ public:
 			next(NULL), prev(NULL), link_next(NULL), link_prev(NULL)
 		{}
 		~hmap_entry_t() {}
-
+		_Key get_key() { return key; }
 		hmap_entry_t<_Key>* get_link_next() { return link_next; }
 			
 	public:
@@ -149,10 +149,14 @@ public:
 		uint32_t h = do_hash(key) % nslot_;
 		hmap_entry_t<_K> *entry;
 		entry = alloc_entry();
+		DBG_WATCHV("hashmap. insert. h=%d table_[h]=%p", h, table_[h]);
 		if (table_[h] != NULL) {
 			table_[h]->prev = entry;
 		}
+		entry->data = val;
+		entry->key = key;
 		entry->next = table_[h];
+		entry->prev = NULL;
 		table_[h] = entry;	
 
 		attach_link_head(entry);
@@ -186,7 +190,7 @@ public:
 		hmap_entry_t<string_t> *entry;
 		entry = table_[h];
 		while(entry != NULL) {
-			if (entry->key.eqaul(s)) return entry;
+			if (entry->key.equal(s)) return entry;
 			entry = entry->next;
 		}
 		return NULL;
@@ -235,6 +239,7 @@ public:
 
 		//detack link list
 		detach_link(entry);
+		--size_;
 	}
 
 

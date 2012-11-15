@@ -48,15 +48,17 @@ public:
 	void log(const char* fmt, ...);
 	void vlog(const char* fmt, va_list arg);
 	void fmt_time(char* buf, size_t n);
+	void enable_console(bool s);
 
 protected:
 	static char path_root[MAX_PATH_LEN];   //shared by all raw logger
 	char path_[MAX_PATH_LEN];
 	char file_[MAX_FILENAME_LEN];
+	bool console_;
 };
 
 void ax_assert(const char *expr, const char* file, const char* func, int line);
-void debug_log(DbgLevel lv, const char* fmt, ...);
+void debug_log(const char* fmt, ...);
 void debug_watch(const char *codefile,  const char* msg, ...);
 
 
