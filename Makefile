@@ -16,26 +16,25 @@ INCLUDES = -I./src
 CC = g++
 LINK = ld
 AR = ar
-OPTIMIZE = -g3 -O2 -Wall -static
+OPTIMIZE = -g3 -O2 -Wall -static -DRUN_INTERNAL
 EXTRA_LIB = 
 
 #==source===================================
 OBJ_DIR = objs
 BIN_DIR = bin
 CORE_OBJ_DIR = objs/core
-CORE_LIB = ax_core.a
+CORE_LIB = libax_core.a
 
 #==link target==============================
 
 include Makefile.dep
 
-all: core engine
+all: core engine test
 	@echo "done!"
 
 clean:
 	-find objs/ -name "*.o" -print | xargs rm -f
 	-find objs/ -name "*.o" -print | xargs rm -f
-
 
 engine: netd
 	@echo "make engine done!!"
@@ -46,9 +45,16 @@ netd: core $(NETD_OBJS)
 core: environ $(CORE_OBJS)
 	$(AR) -r $(OBJ_DIR)/$(CORE_LIB) $(addprefix $(OBJ_DIR)/, $(CORE_OBJS))
 
+.PHONY: test
+
+test:
+	cd test && $(MAKE) $@
+
 environ:
 	-mkdir -p $(OBJ_DIR)/core
+	-mkdir -p $(OBJ_DIR)/test
 	-mkdir -p $(OBJ_DIR)/netd
+	-mkdir -p $(OBJ_DIR)/master
 	-mkdir -p $(BIN_DIR)
 
 
