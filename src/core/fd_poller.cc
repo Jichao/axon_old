@@ -29,7 +29,7 @@ FdPollerBase::PollerEntry* FdPollerBase::find_entry(int fd, uint32_t h)
 }
 
 //return handle
-uint32_t FdPollerBase::add_fd(int fd, IFdEventReactor *reactor)
+ev_handle_t FdPollerBase::add_fd(int fd, IFdEventReactor *reactor)
 {
 	PollerEntry *entry;
 	HashEntryInt *phash;
@@ -106,6 +106,16 @@ int FdPollerBase::process()
 	timeout = timetick_;
 	do_poll(timeout);
 	return 0;
+}
+
+int FdPollerBase::add_timer_event(ev_timer_proc cbfunc, void* data, uint32_t timeout)
+{
+	return timer_->add_timer(cbfunc, data, timeout);
+}
+
+int FdPollerBase::del_timer_event(int handle)
+{
+	return timer_->del_timer(handle);
 }
 
 

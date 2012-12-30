@@ -2,21 +2,21 @@
 #Modify this file after source change.
 
 #code 
-CORE_DEPS_LOCAL = ax_debug.h utest.h ax_buffer.h ax_string.h ax_timer.h \
+CORE_DEPS_LOCAL = stdheader.h ax_debug.h utest.h ax_buffer.h ax_string.h ax_timer.h \
 				  fd_poller.h kqueue.h \
-				  ax_hashmap.h mem_pool.h
+				  ax_hashmap.h mem_pool.h connect.h  os_misc.h
 
 CORE_OBJS_LOCAL = ax_debug.o utest.o ax_buffer.o ax_string.o ax_timer.o \
 				  fd_poller.o kqueue.o \
-				  mem_pool.o 
+				  mem_pool.o connect.o os_misc.o
 
 #add path prefix
 CORE_OBJS = $(addprefix core/, $(CORE_OBJS_LOCAL))
 CORE_DEPS = $(addprefix src/core/, $(CORE_DEPS_LOCAL))
 
 
-NETD_DEPS_LOCAL = 
-NETD_OBJS_LOCAL = netd.o
+CGATE_DEPS_LOCAL = 
+CGATE_OBJS_LOCAL = cgate.o
 
-NETD_OBJS = $(addprefix netd/, $(NETD_OBJS_LOCAL))
-NETD_DEPS = $(addprefix src/netd/, $(NETD_DEPS_LOCAL))
+CGATE_OBJS = $(addprefix cgate/, $(CGATE_OBJS_LOCAL))
+CGATE_DEPS = $(addprefix src/cgate/, $(CGATE_DEPS_LOCAL))

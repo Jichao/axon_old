@@ -35,12 +35,13 @@ all: core engine test
 clean:
 	-find objs/ -name "*.o" -print | xargs rm -f
 	-find objs/ -name "*.o" -print | xargs rm -f
+	-find objs/ -name "*.a" -print | xargs rm -f
 
-engine: netd
+engine: cgate 
 	@echo "make engine done!!"
 
-netd: core $(NETD_OBJS)
-	$(CC) -g3 -o $(BIN_DIR)/netd $(EXTRA_LIB) $(OBJ_DIR)/$(NETD_OBJS) $(OBJ_DIR)/$(CORE_LIB)
+cgate: core $(CGATE_OBJS)
+	$(CC) -g3 -o $(BIN_DIR)/cgate $(EXTRA_LIB) $(OBJ_DIR)/$(CGATE_OBJS) $(OBJ_DIR)/$(CORE_LIB)
 
 core: environ $(CORE_OBJS)
 	$(AR) -r $(OBJ_DIR)/$(CORE_LIB) $(addprefix $(OBJ_DIR)/, $(CORE_OBJS))
@@ -53,7 +54,7 @@ test:
 environ:
 	-mkdir -p $(OBJ_DIR)/core
 	-mkdir -p $(OBJ_DIR)/test
-	-mkdir -p $(OBJ_DIR)/netd
+	-mkdir -p $(OBJ_DIR)/cgate
 	-mkdir -p $(OBJ_DIR)/master
 	-mkdir -p $(BIN_DIR)
 
@@ -63,5 +64,5 @@ environ:
 core/%.o : src/core/%.cc $(CORE_DEPS)
 	$(CC) $(INCLUDES) $(OPTIMIZE) $(OS_SPECIAL) -o $(OBJ_DIR)/$@ -c $<
 
-netd/%.o : src/netd/%.cc $(NETD_DEPS)
+cgate/%.o : src/cgate/%.cc $(CGATE_DEPS)
 	$(CC) $(INCLUDES) $(OPTIMIZE) $(OS_SPECIAL) -o $(OBJ_DIR)/$@ -c $<

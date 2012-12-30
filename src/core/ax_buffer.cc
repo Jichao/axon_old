@@ -134,18 +134,21 @@ void buffer_t::push(int n)
 void buffer_t::reset(uint32_t size)
 {
 	char *newp;
-	if (size > 0) {
+	
+	if (size != alloc_size_) {
 		alloc_size_ = size;
 		newp = (char*)realloc(buf_, alloc_size_);
 		RT_ASSERT(newp != NULL);
 		buf_ = newp;
-	} else {
+	} else if (size == 0) {
 		alloc_size_ = 0;
 		free(buf_);
 		buf_ = NULL;
+	} else {
+		//same size, do not realloc
 	}
-	start_ = end_ = 0;
-	len_ = 0;
+
+	clear();
 }
 
 void buffer_t::clear()

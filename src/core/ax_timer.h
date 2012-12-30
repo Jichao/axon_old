@@ -8,7 +8,7 @@
 
 namespace axon {
 
-typedef void (*ev_timer_proc)(int handle);
+typedef void (*ev_timer_proc)(int handle, void* data);
 
 //TimerWheel implementation
 //Reference:
@@ -22,6 +22,7 @@ public:
 		int handle;
 		ev_timer_proc cbfunc;
 		uint32_t tick;    //which tick to do timeout callback
+		void* data;
 		TimerEntry *next;
 	};
 	enum {
@@ -35,7 +36,7 @@ public:
 
 public:
 	uint32_t get_timepass();
-	int add_timer(ev_timer_proc cbfunc, uint32_t timeout);
+	int add_timer(ev_timer_proc cbfunc, void* data, uint32_t timeout);
 	int del_timer(int handle);
 	void timer_routine();		
 

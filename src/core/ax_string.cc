@@ -82,7 +82,7 @@ string_t& string_t::operator=(const string_t &rhs)
 		//copy the type byte
 		small_[LAST_CHAR] = rhs.small_[LAST_CHAR];
 	}
-
+	return *this;
 }
 
 const char* string_t::c_str() const
@@ -172,6 +172,15 @@ void string_t::strcat(const string_t &rhs)
 {
 	this->strcat(rhs.c_str());
 }
+
+void string_t::clear()
+{
+	if (type() == LARGER_STR) {
+		free(larger_.data_);
+	}
+	memset(&larger_, 0, sizeof(larger_));
+}
+
 
 //unit test=======================================
 UTEST(string_t)

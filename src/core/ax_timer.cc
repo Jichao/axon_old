@@ -64,13 +64,14 @@ int EvTimer::which_slot(uint32_t tick, uint32_t* slot)
 	return 0;
 }
 
-int EvTimer::add_timer(ev_timer_proc cbfunc, uint32_t timeout)
+int EvTimer::add_timer(ev_timer_proc cbfunc, void* data, uint32_t timeout)
 {
 	int wheel;
 	uint32_t slot[TOTAL_WHEEL];
 	TimerEntry *pe = (TimerEntry*)entry_pool_->alloc();
 	RT_ASSERT(pe != NULL);
 	pe->cbfunc = cbfunc;
+	pe->data = data;
 	++handle_;
 	if (handle_ <= 0) handle_ = 1;
 	pe->handle = handle_;
@@ -171,7 +172,7 @@ void EvTimer::process_tick()
 	p = head;
 	while (p != NULL) {
 		q = p->next;
-		if (p->cbfunc != NULL) p->cbfunc(p->handle);	
+		if (p->cbfunc != NULL) p->cbfunc(p->handle, p->data);	
 		p = q;
 	}
 	

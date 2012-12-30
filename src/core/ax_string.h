@@ -38,6 +38,7 @@ public:
 	bool operator==(const char* cstr) const;
 	void strcat(const char* s);
 	void strcat(const string_t &rhs);
+	void clear();
 
 	//reserve heap memory
 	void expand(const uint32_t n);
