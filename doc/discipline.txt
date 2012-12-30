@@ -1,0 +1,9 @@
+
+Naming
+===================================
+    global function:       do_some_work();
+    global var:            g_my_var;    // g_xxxx
+    class private var:     p_var_;      // xxxx_
+    class/struct name:     class MyClassName;
+    class function:        my_class_function();
+    macros:                #define MY_MACROS(x)
