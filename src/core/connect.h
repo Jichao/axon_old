@@ -28,12 +28,13 @@ public:
 	virtual void on_listen_read(Listener* ls) = 0;
 };
 
+//socket connection
 class Connect : public IFdEventReactor
 {
 public:
 	Connect();
 	~Connect();
-	void init(IConnectHandler* mgr, int fd, int rsize, int wsize);
+	int init(IConnectHandler* mgr, int fd, int rsize, int wsize);
 	void close();
 	void reset();
 	bool is_active() { return fd_ > 0 && mgr_ != NULL && peer_port_ > 0;}
@@ -45,18 +46,44 @@ public:
 public:	
 	int fd_;
 	ev_handle_t ev_handle_;	
-	int index_;
-	int status_;
-	int ident_;     //identify fd type to decide action in mgr_
+	//addition tag variable
+	int index_;     //index in container
+	int status_;    //connection state machine variable
+	int hid_;     //identify unique connection in mgr_
 
 	string_t peer_ip_;
 	uint16_t peer_port_;   //peer's port
 
-	Connect* next_;
-	IConnectHandler *mgr_;
+	IConnectHandler *mgr_;   //manage class to handler socket process
+	Connect* next_;        //used as linklist
 	buffer_t *rbuf_;
 	buffer_t *wbuf_;
 };
+
+//a bundle of connections
+class ConnectContainer
+{
+public:
+	ConnectContainer(uint32_t n, IConnectHandler* mgr, uint32_t rbuf_size, uint32_t wbuf_size);
+	~ConnectContainer();
+
+	int alloc_connect(int sockfd);
+	void free_connect(int vfd);
+	Connect* get_connect(int vfd);
+private:
+	int max_ident_;
+	uint32_t rsize_ ;   //rbuffer size
+	uint32_t wsize_ ;   //wbuffer size
+	int count_;
+	int capacity_;
+	int max_vfd_;
+	Connect *connects_;  //connection array
+	Connect *head_;     //connect iterator begin
+	int *free_stack_;
+	int stack_top_;
+	IConnectHandler *mgr_;
+};
+
 
 class Listener : public IFdEventReactor
 {

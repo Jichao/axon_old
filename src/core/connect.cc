@@ -4,10 +4,9 @@
 
 namespace axon {
 
-Connect::Connect() : next_(NULL), mgr_(NULL)
+Connect::Connect() : mgr_(NULL), next_(NULL)
 {
 	rbuf_ = wbuf_ = NULL;
-	ident_ = 0;
 	reset();
 }
 
@@ -17,9 +16,13 @@ Connect::~Connect()
 	delete wbuf_;
 }
 
-void Connect::init(IConnectHandler *m, int fd, int rsize, int wsize)
+// Init connection 
+//param: 
+//    m      connection manager
+int Connect::init(IConnectHandler *m, int fd, int rsize, int wsize)
 {
-	RT_ASSERT(m != NULL && fd >= 0 && rsize > 0 && wsize > 0);
+	RT_ASSERT(m != NULL);
+	RT_ASSERT(fd >= 0 && rsize > 0 && wsize > 0);
 	mgr_ = m;
 	fd_ = fd;
 	if (rbuf_) {
@@ -33,12 +36,15 @@ void Connect::init(IConnectHandler *m, int fd, int rsize, int wsize)
 	} else {
 		wbuf_ = new buffer_t(wsize);
 	}
+
+	return AX_RET_OK;
 }
 
 void Connect::reset()
 {
 	fd_ = -1;
 	index_ = -1;
+	hid_ = -1;
 	peer_port_ = 0;	
 	ev_handle_ = 0;
 	peer_ip_ = string_t("0.0.0.0");
@@ -65,6 +71,75 @@ void Connect::on_ev_write(int fd)
 	mgr_->on_write(this);
 
 }
+
+//ConnectContainer======================
+//
+//param: n   max connection capacity
+ConnectContainer::ConnectContainer(uint32_t n, IConnectHandler* mgr, uint32_t rbuf_size, uint32_t wbuf_size) :
+	 connects_(NULL), head_(NULL)
+{
+	int i;
+	connects_ = new Connect[n];
+	RT_ASSERT(connects_ != NULL);
+	free_stack_ = new int[n];
+	RT_ASSERT(free_stack_ != NULL);
+	count_ = 0;
+	capacity_ = n;
+	stack_top_ = 0;
+	for(i=0; i<(int)n; i++) {
+		free_stack_[i] = i;
+	}
+	rsize_ = rbuf_size;
+	wsize_ = wbuf_size;
+	mgr_ = mgr;
+}
+
+ConnectContainer::~ConnectContainer()
+{
+	delete[] connects_;
+	delete[] free_stack_;
+}
+
+//return a virtual fd to identify connect (actually a array index)
+int ConnectContainer::alloc_connect(int sockfd)
+{
+	int vfd;
+	Connect* c;
+	if (count_ >= capacity_) return AX_RET_FULL;
+	RT_ASSERT(mgr_ != NULL && connects_ != NULL);
+	
+	vfd = free_stack_[stack_top_];
+	RT_ASSERT(vfd >= 0 && vfd < capacity_);
+
+	c = &connects_[vfd];
+	c->init(mgr_, sockfd, rsize_, wsize_);
+
+	++stack_top_;
+	++count_;
+	return vfd;	
+}
+
+void ConnectContainer::free_connect(int vfd)
+{
+	Connect* c;
+	RT_ASSERT(stack_top_ >= 0 && count_ >= 0);
+	RT_ASSERT(vfd >= 0 && vfd < capacity_ && connects_ != NULL);
+
+	c = &connects_[vfd];
+	c->reset();
+	--stack_top_;
+	--count_;
+	free_stack_[stack_top_] = vfd;
+}
+
+Connect* ConnectContainer::get_connect(int vfd)
+{
+	if (vfd > capacity_ - 1 || vfd < 0) return NULL;
+	RT_ASSERT(connects_ != NULL);
+	return &connects_[vfd];
+}
+
+
 
 //Listener===================================
 

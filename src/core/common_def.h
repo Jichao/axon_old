@@ -5,4 +5,11 @@
 #define MAX_PATH_LEN 512
 #define MAX_FILENAME_LEN 256
 
+
+//normal ret value
+#define AX_RET_OK 0
+#define AX_RET_ERROR -1
+#define AX_RET_FULL -2
+
+
 #endif

@@ -5,17 +5,20 @@
 #define _AX_FD_POLLER_H_
 
 #include "stdheader.h"
+#include "common_def.h"
 #include "ax_hashmap.h"
 #include "ax_timer.h"
 
 namespace axon {
 
 //poller according to OS
-#if defined AX_USE_SELECT
+#if defined USE_SELECT
 	typedef SelectPoller EvPoller;
-#elif defined AX_USE_KQUEUE
+#elif defined USE_KQUEUE
+	class KqueuePoller;
 	typedef KqueuePoller EvPoller;
-#elif defined AX_USE_EPOLL
+#elif defined USE_EPOLL
+	class EpollPoller;
 	typedef EpollPoller EvPoller;
 #endif
 
