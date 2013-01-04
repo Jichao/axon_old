@@ -11,7 +11,7 @@ class ConnectWorker: public IConnectHandler
 public:
 	ConnectWorker(EvPoller* poller, uint32_t max_connect, uint32_t rsize, uint32_t wsize);
 	~ConnectWorker();
-	Connect* new_connect(int fd, int hid, uint16_t peer_port, string_t peer_ip);
+	Connect* new_connect(int fd, int hid, string_t peer_ip, uint16_t peer_port);
 	virtual void on_read(Connect* conn);
 	virtual void on_write(Connect* conn);
 

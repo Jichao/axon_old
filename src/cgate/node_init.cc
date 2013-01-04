@@ -1,5 +1,6 @@
 //Purpose: app_node Init and global variable Config
 
+#include "node_init.h"
 #include <jsoncpp/json.h>
 #include <core/ax_core.h>
 #include <string>
@@ -9,14 +10,14 @@ using namespace axon;
 
 static char g_conf_file[512] = "cgate.conf";
 
-void set_node_config_file(const char* file)
+void NodeConf::set_node_config_file(const char* file)
 {
 	memset(g_conf_file, 0, sizeof(g_conf_file));
 	strncpy(g_conf_file, file, sizeof(g_conf_file) - 1);
 }
 
 
-static void init_node_conf(Json::Value *root)
+void NodeConf::init_node_conf(Json::Value *root)
 {
 	std::string name;
 	int port;
@@ -28,14 +29,14 @@ static void init_node_conf(Json::Value *root)
 
 //reload config during runtime
 //reset some of the global setting and do some reinit work
-static void reload_node_conf(Json::Value *root)
+void NodeConf::reload_node_conf(Json::Value *root)
 {
 
 
 }
 
 //init global variable when node process start
-int load_node_conf(int is_reload)
+int NodeConf::load_node_conf(int is_reload)
 {
 	Json::Value root;
 	Json::Reader reader;		

@@ -6,7 +6,7 @@ using namespace axon;
 int main()
 {
 	RawLogger::set_pathroot("logs/");
-	set_node_config_file("cgate.conf");
-	load_node_conf(0);	
+	NodeConf::set_node_config_file("cgate.conf");
+	NodeConf::load_node_conf(0);	
 	return 0;
 }

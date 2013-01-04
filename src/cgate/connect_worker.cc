@@ -9,7 +9,7 @@ ConnectWorker::ConnectWorker(EvPoller* poller, uint32_t max_connect, uint32_t rs
 	rbuf_size_ = rsize;
 	wbuf_size_ = wsize;
 	max_connect_ = max_connect;
-	container_ = new ConnectConainter(max_connect, this, rsize, wsize);
+	container_ = new ConnectContainer(max_connect, this, rsize, wsize);
 }
 
 ConnectWorker::~ConnectWorker()
@@ -18,28 +18,32 @@ ConnectWorker::~ConnectWorker()
 	delete container_;
 }
 
-Connect* ConnectWorker::new_connect(int fd, int hid, uint16_t peer_port, string_t peer_ip)
+Connect* ConnectWorker::new_connect(int fd, int hid, string_t peer_ip, uint16_t peer_port)
 {
 	int vfd = container_->alloc_connect(fd);
 	Connect* conn;
 	if (vfd < 0) {
 		return NULL;  //no more connection to alloc
 	}	
-	conn = container_->get_connect();
+	conn = container_->get_connect(vfd);
 	RT_ASSERT(conn != NULL);
 	conn->init(this, fd, rbuf_size_, wbuf_size_);
 	conn->hid_ = hid;
+	conn->index_ = vfd;
 	conn->peer_port_ = peer_port;
 	conn->peer_ip_ = peer_ip;
 	conn->ev_handle_ = poller_->add_fd(fd, conn);
 	poller_->add_event(fd, hid, EV_READ);
+	return conn;
 }
 
+//data in
 void ConnectWorker::on_read(Connect* conn)
 {
 
 }
 
+//data out
 void ConnectWorker::on_write(Connect* conn)
 {
 
