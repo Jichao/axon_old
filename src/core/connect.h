@@ -28,10 +28,13 @@ public:
 	virtual void on_listen_read(Listener* ls) = 0;
 };
 
+class ConnectContainer;
+
 //socket connection
 class Connect : public IFdEventReactor
 {
 public:
+	friend class ConnectContainer;
 	Connect();
 	~Connect();
 	int init(IConnectHandler* mgr, int fd, int rsize, int wsize);
@@ -45,7 +48,6 @@ public:
 //direct manipulated by connection manager
 public:	
 	int fd_;
-	ev_handle_t ev_handle_;	
 	//addition tag variable
 	int index_;     //index in container
 	int status_;    //connection state machine variable
@@ -54,10 +56,13 @@ public:
 	string_t peer_ip_;
 	uint16_t peer_port_;   //peer's port
 
-	IConnectHandler *mgr_;   //manage class to handler socket process
-	Connect* next_;        //used as linklist
+	ev_handle_t ev_handle_;	
 	buffer_t *rbuf_;
 	buffer_t *wbuf_;
+
+protected:
+	IConnectHandler *mgr_;   //manage class to handler socket process
+	Connect* next_;        //used as linklist
 };
 
 //a bundle of connections
@@ -70,6 +75,9 @@ public:
 	int alloc_connect(int sockfd);
 	void free_connect(int vfd);
 	Connect* get_connect(int vfd);
+	int count() { return count_; }
+	int capacity() { return capacity_; }
+
 private:
 	int max_ident_;
 	uint32_t rsize_ ;   //rbuffer size

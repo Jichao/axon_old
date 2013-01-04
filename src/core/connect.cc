@@ -113,6 +113,8 @@ int ConnectContainer::alloc_connect(int sockfd)
 
 	c = &connects_[vfd];
 	c->init(mgr_, sockfd, rsize_, wsize_);
+	c->next_ = head_;
+	head_ = c;
 
 	++stack_top_;
 	++count_;
@@ -134,8 +136,8 @@ void ConnectContainer::free_connect(int vfd)
 
 Connect* ConnectContainer::get_connect(int vfd)
 {
-	if (vfd > capacity_ - 1 || vfd < 0) return NULL;
 	RT_ASSERT(connects_ != NULL);
+	if (vfd > capacity_ - 1 || vfd < 0) return NULL;
 	return &connects_[vfd];
 }
 
@@ -208,8 +210,8 @@ int Listener::listen()
 	struct sockaddr_in sin;
 	
 	//not init correctly
-	if (port_ == 0 || fd_ < 0 || backlog_ < 1) return -1;
-	if (mgr_ == NULL) return -1;
+	if (port_ == 0 || fd_ < 0 || backlog_ < 1) return AX_RET_ERROR;
+	if (mgr_ == NULL) return AX_RET_ERROR;
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = INADDR_ANY;
 	sin.sin_port = htons((unsigned short)port_);
@@ -222,7 +224,7 @@ int Listener::listen()
 	::listen(fd_, backlog_);
 	debug_log("[Listener] start listen. port= %d", port_);	
 	listening_ = 1;
-	return 0;
+	return AX_RET_OK;
 }
 
 
