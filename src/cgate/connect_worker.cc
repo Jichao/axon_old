@@ -18,6 +18,21 @@ ConnectWorker::~ConnectWorker()
 	delete container_;
 }
 
+Connect* ConnectWorker::get_connect(int vfd, int hid)
+{
+	Connect* c = container_->get_connect(vfd);
+	if (NULL == c) return NULL;
+	if (c->hid_ != hid) return NULL;
+	return c;
+}
+
+void ConnectWorker::close_connect(int vfd, int hid)
+{
+	Connect* c = container_->get_connect(vfd);
+
+}
+
+
 Connect* ConnectWorker::new_connect(int fd, int hid, string_t peer_ip, uint16_t peer_port)
 {
 	int vfd = container_->alloc_connect(fd);

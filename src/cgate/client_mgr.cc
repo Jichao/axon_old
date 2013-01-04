@@ -45,17 +45,18 @@ void ClientMgr::on_listen_read(Listener *ls)
 		client_fd = ::accept(ls->fd_, (struct sockaddr *)&client_addr, (socklen_t *)&length);
 		if (client_fd < 0) {
 			if (errno == EWOULDBLOCK) continue;
-			break;  //error occur
+			//error occur
+			break;
 		}
 		client_ip.strcat( inet_ntoa(client_addr.sin_addr) );
 		client_port = ntohs(client_addr.sin_port);
-		accept_new_connect(client_fd, client_ip, client_port);	
+		on_accept_new_connect(client_fd, client_ip, client_port);	
 		++accept_once;
 	}
 }
 
 //accept new socket and dispatch to a worker
-int ClientMgr::accept_new_connect(int sockfd, string_t ip, uint16_t port)
+int ClientMgr::on_accept_new_connect(int sockfd, string_t ip, uint16_t port)
 {
 	Connect* conn;
 	//accept
@@ -69,5 +70,30 @@ int ClientMgr::accept_new_connect(int sockfd, string_t ip, uint16_t port)
 		return AX_RET_ERROR;
 	}
 	active_hids_->insert(hid_, (void*)conn->index_);
+	return AX_RET_OK;
+}
+
+EvPoller* ClientMgr::get_poller()
+{
+	return main_poller_;
+}
+
+//client close actively
+void ClientMgr::on_peer_close(int fd, int hid)
+{
+	int vfd;
+	Connect *conn;
+	vfd = (long)(active_hids_->remove_get(hid));
+}
+
+//active close connect in server-side
+int ClientMgr::close_connect(int hid)
+{
+	int vfd;
+	Connect* conn;
+
+	vfd = (long)(active_hids_->remove_get(hid));
+	conn = worker_->get_connect(vfd, hid);
+	if (NULL == conn) return AX_RET_ERROR;
 	return AX_RET_OK;
 }

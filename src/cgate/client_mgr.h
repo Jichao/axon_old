@@ -14,8 +14,12 @@ public:
 	~ClientMgr();
 	virtual void on_listen_read(Listener* ls);
 	void init(uint32_t max_connect, uint32_t rsize, uint32_t wsize, uint16_t client_port, uint16_t backlog);
-	int accept_new_connect(int sockfd, string_t ip, uint16_t port);
-	int get_poller();
+	EvPoller* get_poller();
+	void on_peer_close(int fd, int hid);
+	int close_connect(int hid);
+
+private:
+	int on_accept_new_connect(int sockfd, string_t ip, uint16_t port);
 
 private:
 	ConnectWorker *worker_;   //connection routine worker 
