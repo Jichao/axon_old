@@ -1,3 +1,12 @@
+uname_s := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+
+ifeq ($(uname_s), Linux)
+  OS_SPECIAL = -DUSE_EPOLL
+else
+  OS_SPECIAL = -DUSE_KQUEUE
+endif
+
+
 OBJ_DIR = ../objs
 CORE_LIB = libax_core.a
 INCLUDES = -I../src/ -L ../objs/
@@ -6,7 +15,7 @@ LINK_ALL = -Wl,--whole-archive
 DONT_LINK_ALL = -Wl,--no-whole-archive
 
 %.o : %.cc
-	g++ $(INCLUDES) $(OPTIMIZE) -o $(OBJ_DIR)/$@ -c $<
+	g++ $(INCLUDES) $(OS_SPECIAL) $(OPTIMIZE) -o $(OBJ_DIR)/$@ -c $<
 
 all: test
 

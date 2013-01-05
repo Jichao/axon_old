@@ -17,7 +17,7 @@ CC = g++
 LINK = ld
 AR = ar
 OPTIMIZE = -g3 -O2 -Wall -static -DRUN_INTERNAL
-EXTRA_LIB = 
+EXTRA_LIB = depends/lib/libjson.a
 
 #==source===================================
 OBJ_DIR = objs
@@ -41,7 +41,7 @@ engine: cgate
 	@echo "make engine done!!"
 
 cgate: core $(CGATE_OBJS)
-	$(CC) -g3 -o $(BIN_DIR)/cgate $(EXTRA_LIB) $(addprefix $(OBJ_DIR)/, $(CGATE_OBJS)) $(OBJ_DIR)/$(CORE_LIB)
+	$(CC) -g3 -o $(BIN_DIR)/cgate $(addprefix $(OBJ_DIR)/, $(CGATE_OBJS)) $(OBJ_DIR)/$(CORE_LIB) $(EXTRA_LIB) 
 
 core: environ $(CORE_OBJS)
 	$(AR) -r $(OBJ_DIR)/$(CORE_LIB) $(addprefix $(OBJ_DIR)/, $(CORE_OBJS))

@@ -30,6 +30,7 @@ public:
 	~string_t();
 
 	string_t& operator=(const string_t &rhs);
+	void assign(const char* s);
 
 	const char* c_str() const;
 	bool equal(const string_t &rhs) const;

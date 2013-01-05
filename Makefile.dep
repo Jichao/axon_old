@@ -16,7 +16,7 @@ CORE_DEPS = $(addprefix src/core/, $(CORE_DEPS_LOCAL))
 
 
 CGATE_DEPS_LOCAL = node_init.h client_mgr.h connect_worker.h
-CGATE_OBJS_LOCAL = cgate.o node_init.o connect_worker.o client_mgr.o
+CGATE_OBJS_LOCAL = main.o node_init.o connect_worker.o client_mgr.o
 
 CGATE_OBJS = $(addprefix cgate/, $(CGATE_OBJS_LOCAL))
 CGATE_DEPS = $(addprefix src/cgate/, $(CGATE_DEPS_LOCAL))

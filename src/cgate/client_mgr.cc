@@ -1,4 +1,5 @@
 
+#include "node_init.h"
 #include "connect_worker.h"
 #include "client_mgr.h"
 
@@ -23,13 +24,33 @@ void ClientMgr::init(uint32_t max_connect, uint32_t rsize, uint32_t wsize, uint1
 {
 	
 	active_hids_ = new HashMapInt(max_connect * 2 / 3);
-	main_poller_ = new EvPoller(max_connect, 100);
+	main_poller_ = new EvPoller(max_connect, NodeConf::timetick);
 	client_listener_ = new Listener;
 	worker_ = new ConnectWorker(main_poller_, max_connect, rsize, wsize);
 	client_listener_->init(this, client_port, backlog);
 
 	inited_ = 1;
 }
+
+int ClientMgr::listen()
+{
+	int ret;
+	if (!inited_) return AX_RET_ERROR;
+	ret = client_listener_->listen(main_poller_);
+	if (ret == AX_RET_ERROR) {
+		debug_log("[Listener] cannot bind listener. port=%d", client_listener_->port_);
+		return AX_RET_ERROR;
+	} 
+	debug_log("[Listener] start listen on client port=%d", client_listener_->get_port());
+	return AX_RET_OK;
+}
+
+int ClientMgr::process()
+{
+	main_poller_->process();
+	return AX_RET_OK;
+}
+
 
 void ClientMgr::on_listen_read(Listener *ls)
 {

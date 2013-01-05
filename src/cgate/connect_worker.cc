@@ -29,7 +29,8 @@ Connect* ConnectWorker::get_connect(int vfd, int hid)
 void ConnectWorker::close_connect(int vfd, int hid)
 {
 	Connect* c = container_->get_connect(vfd);
-
+	if (NULL == c) return;
+	c->close();
 }
 
 
@@ -48,7 +49,7 @@ Connect* ConnectWorker::new_connect(int fd, int hid, string_t peer_ip, uint16_t 
 	conn->peer_port_ = peer_port;
 	conn->peer_ip_ = peer_ip;
 	conn->ev_handle_ = poller_->add_fd(fd, conn);
-	poller_->add_event(fd, hid, EV_READ);
+	poller_->add_event(fd, conn->ev_handle_, EV_READ);
 	return conn;
 }
 

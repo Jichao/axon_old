@@ -84,6 +84,21 @@ string_t& string_t::operator=(const string_t &rhs)
 	}
 	return *this;
 }
+void string_t::assign(const char* s)
+{
+	uint32_t len_s = strlen(s);
+	if (len_s > capacity()) {
+		expand(len_s);
+	}
+	if (len_s > MAX_SMALL_LEN) {
+		::strcpy(larger_.data_, s);	
+		larger_.len_ = len_s;
+	} else {
+		::strcpy(small_, s);
+		small_[TYPE_CHAR] &= TYPE_MASK;
+		small_[TYPE_CHAR] |= len_s & SMALL_LEN_MASK;
+	}
+}
 
 const char* string_t::c_str() const
 {

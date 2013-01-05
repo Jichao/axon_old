@@ -151,6 +151,7 @@ Listener::Listener() : mgr_(NULL)
 	fd_ = -1;
 	port_ = backlog_ = 0;
 	ident_ = 0;
+	ev_handle_ = 0;
 }
 
 Listener::~Listener() 
@@ -171,13 +172,13 @@ int Listener::init(IListenHandler* mgr, uint16_t port, int backlog)
 	fd = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0) {
 		debug_log("[Listener] cannot create listener socket");
-		return -1;
+		return AX_RET_ERROR;
 	}
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
 				(char *) &optval, sizeof(optval)) == -1)
 	{
 		debug_log("[Listener] cannot set REUSEADDR for listener");
-		return -1;
+		return AX_RET_ERROR;
 	}
 	
 	fd_ = fd;	
@@ -185,7 +186,7 @@ int Listener::init(IListenHandler* mgr, uint16_t port, int backlog)
 	port_ = port;
 	backlog_ = backlog;
 
-	return 0;
+	return AX_RET_OK;
 }
 
 void Listener::on_ev_read(int fd)
@@ -205,7 +206,7 @@ void Listener::close()
 	fd_ = -1;
 }
 
-int Listener::listen()
+int Listener::listen(EvPoller *poller)
 {
 	struct sockaddr_in sin;
 	
@@ -217,13 +218,13 @@ int Listener::listen()
 	sin.sin_port = htons((unsigned short)port_);
 	if (::bind(fd_, (struct sockaddr *)&sin, sizeof(sin)) == -1)
 	{
-		debug_log("[Listener] cannot bind listener. port=%d", port_);
-		return -1;
+		return AX_RET_ERROR;
 	}
 	ax_set_nonblock(fd_);
 	::listen(fd_, backlog_);
-	debug_log("[Listener] start listen. port= %d", port_);	
 	listening_ = 1;
+	ev_handle_ = poller->add_fd(fd_, this);
+	poller->add_event(fd_, ev_handle_, EV_READ);
 	return AX_RET_OK;
 }
 

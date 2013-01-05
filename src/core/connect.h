@@ -100,10 +100,11 @@ public:
 	~Listener();
 
 	int init(IListenHandler* mgr, uint16_t port, int backlog);
-	int listen();
+	int listen(EvPoller* poller);
 	void close();
 	virtual void on_ev_read(int fd);
 	virtual void on_ev_write(int fd);
+	int get_port() { return port_; }
 
 //direct manipulated by connection manager
 public:

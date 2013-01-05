@@ -9,6 +9,16 @@
 using namespace axon;
 
 static char g_conf_file[512] = "cgate.conf";
+ClientMgr *g_client_mgr = NULL;
+
+//global var
+string_t NodeConf::name("");
+int NodeConf::hostnum = 10;
+string_t NodeConf::logpath("");
+string_t NodeConf::workdir("");
+int NodeConf::timetick = 100;
+//net config
+
 
 void NodeConf::set_node_config_file(const char* file)
 {
@@ -17,14 +27,32 @@ void NodeConf::set_node_config_file(const char* file)
 }
 
 
-void NodeConf::init_node_conf(Json::Value *root)
+int NodeConf::init_node_conf(Json::Value *root)
 {
-	std::string name;
-	int port;
-	if (root == NULL) return;
+	Json::Value net;
+	if (root == NULL) return AX_RET_ERROR;
 
-	name = root->get("name", "unknown").asString();
-	port = root->get("client_port", 1234).asInt();
+	name.assign(root->get("name", "unknown").asString().c_str());
+	hostnum = root->get("hostnum", 89).asInt();
+	timetick = root->get("timetick", 100).asInt();
+	net = root->get("net", 0);
+	if (net.isObject()) {
+		int port, backlog, max_conn;
+		int rsize;
+		g_client_mgr = new ClientMgr();
+		port = net.get("client_port", 1234).asInt();
+		backlog = net.get("backlog", 10).asInt();
+		max_conn = net.get("max_connect", 1000).asInt();
+		rsize = net.get("client_rbuf", 1000).asInt();
+		g_client_mgr->init(max_conn, rsize, 100, port, backlog);
+	} else {
+		return AX_RET_ERROR;
+	}
+
+	logpath.assign(root->get("logpath", "./").asString().c_str());
+	workdir.assign(root->get("workdir", "./").asString().c_str());
+
+	return AX_RET_OK;
 }
 
 //reload config during runtime
@@ -49,7 +77,7 @@ int NodeConf::load_node_conf(int is_reload)
 
 	//init node's global data
 	if (is_reload == 0) {
-		init_node_conf(&root);
+		return init_node_conf(&root);
 	} else {
 		reload_node_conf(&root);
 	}
