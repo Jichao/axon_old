@@ -59,6 +59,17 @@ void Connect::close()
 	reset();
 }
 
+int Connect::read()
+{
+	int nbytes;
+	static char tmpbuf[2048];
+	RT_ASSERT(rbuf_ != NULL);
+	nbytes = ::read(fd_, tmpbuf, 2048);
+	if (nbytes <= 0) return nbytes;
+	rbuf_->push(tmpbuf, nbytes);
+	return nbytes;
+}
+
 void Connect::on_ev_read(int fd)
 {
 	if (mgr_ == NULL) return;

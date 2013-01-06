@@ -40,6 +40,7 @@ public:
 	int init(IConnectHandler* mgr, int fd, int rsize, int wsize);
 	void close();
 	void reset();
+	int read();
 	bool is_active() { return fd_ > 0 && mgr_ != NULL && peer_port_ > 0;}
 
 	virtual void on_ev_read(int fd);

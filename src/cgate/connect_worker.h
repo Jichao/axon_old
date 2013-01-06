@@ -16,6 +16,8 @@ public:
 	void close_connect(int vfd, int hid);
 	virtual void on_read(Connect* conn);
 	virtual void on_write(Connect* conn);
+	void decrypt_client_data(Connect* conn);
+	void process_data(Connect* conn);
 
 private:
 	EvPoller  *poller_;

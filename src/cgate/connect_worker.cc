@@ -31,6 +31,7 @@ void ConnectWorker::close_connect(int vfd, int hid)
 	Connect* c = container_->get_connect(vfd);
 	if (NULL == c) return;
 	c->close();
+	container_->free_connect(vfd);
 }
 
 
@@ -56,7 +57,17 @@ Connect* ConnectWorker::new_connect(int fd, int hid, string_t peer_ip, uint16_t 
 //data in
 void ConnectWorker::on_read(Connect* conn)
 {
-
+	int ret;
+	ret = conn->read();	
+	if (ret < 0 && (errno == EINTR || errno == EAGAIN)) {
+		return;   //no data, try next time
+	}
+	if (ret <= 0) {
+		//client socket fail/close
+		this->close_connect(conn->index_, conn->hid_);
+		return;
+	}
+	process_data(conn);
 }
 
 //data out
@@ -65,3 +76,16 @@ void ConnectWorker::on_write(Connect* conn)
 
 }
 
+//decrypt stream
+void ConnectWorker::decrypt_client_data(Connect* conn)
+{
+
+
+}
+
+void ConnectWorker::process_data(Connect* conn)
+{
+
+	decrypt_client_data(conn);
+
+}
