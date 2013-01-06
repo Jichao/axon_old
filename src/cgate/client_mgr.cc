@@ -5,17 +5,17 @@
 
 using namespace axon;
 
-ClientMgr::ClientMgr() : inited_(0), client_listener_(NULL)
+ClientMgr::ClientMgr(EvPoller *poller) : inited_(0), client_listener_(NULL)
 {
 	worker_ = NULL;
 	hid_ = 1;   //start from 1
 	active_hids_ = NULL;
+	main_poller_ = poller;
 }
 
 ClientMgr::~ClientMgr()
 {
 	delete worker_;
-	delete main_poller_;
 	delete client_listener_;
 	delete active_hids_;
 }
@@ -24,7 +24,6 @@ void ClientMgr::init(uint32_t max_connect, uint32_t rsize, uint32_t wsize, uint1
 {
 	
 	active_hids_ = new HashMapInt(max_connect * 2 / 3);
-	main_poller_ = new EvPoller(max_connect, NodeConf::timetick);
 	client_listener_ = new Listener;
 	worker_ = new ConnectWorker(main_poller_, max_connect, rsize, wsize);
 	client_listener_->init(this, client_port, backlog);

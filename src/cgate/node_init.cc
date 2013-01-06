@@ -10,6 +10,7 @@ using namespace axon;
 
 static char g_conf_file[512] = "cgate.conf";
 ClientMgr *g_client_mgr = NULL;
+EvPoller *g_main_poller = NULL;
 
 //global var
 string_t NodeConf::name("");
@@ -39,11 +40,12 @@ int NodeConf::init_node_conf(Json::Value *root)
 	if (net.isObject()) {
 		int port, backlog, max_conn;
 		int rsize;
-		g_client_mgr = new ClientMgr();
 		port = net.get("client_port", 1234).asInt();
 		backlog = net.get("backlog", 10).asInt();
 		max_conn = net.get("max_connect", 1000).asInt();
 		rsize = net.get("client_rbuf", 1000).asInt();
+		g_main_poller = new EvPoller(max_conn, timetick);
+		g_client_mgr = new ClientMgr(g_main_poller);
 		g_client_mgr->init(max_conn, rsize, 100, port, backlog);
 	} else {
 		return AX_RET_ERROR;
