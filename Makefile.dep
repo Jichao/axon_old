@@ -4,11 +4,11 @@
 #code 
 CORE_DEPS_LOCAL = stdheader.h ax_debug.h utest.h ax_buffer.h ax_string.h ax_timer.h \
 				  fd_poller.h kqueue.h \
-				  ax_hashmap.h mem_pool.h connect.h  os_misc.h
+				  ax_hashmap.h mem_pool.h connect.h  os_misc.h ax_queue.h
 
 CORE_OBJS_LOCAL = ax_debug.o utest.o ax_buffer.o ax_string.o ax_timer.o \
 				  fd_poller.o kqueue.o \
-				  mem_pool.o connect.o os_misc.o
+				  mem_pool.o connect.o os_misc.o ax_queue.o
 
 #add path prefix
 CORE_OBJS = $(addprefix core/, $(CORE_OBJS_LOCAL))
