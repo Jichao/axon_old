@@ -64,9 +64,12 @@ void ClientMgr::on_listen_read(Listener *ls)
 	while (accept_once < 100) {
 		client_fd = ::accept(ls->fd_, (struct sockaddr *)&client_addr, (socklen_t *)&length);
 		if (client_fd < 0) {
-			if (errno == EWOULDBLOCK) continue;
+			if (errno == EWOULDBLOCK || errno == EINTR) { 
+				break;	
+			}
 			//error occur
 			break;
+
 		}
 		client_ip.strcat( inet_ntoa(client_addr.sin_addr) );
 		client_port = ntohs(client_addr.sin_port);
