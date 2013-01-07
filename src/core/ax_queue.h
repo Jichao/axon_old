@@ -1,3 +1,4 @@
+//queue for variable length messages
 
 #ifndef _AX_QUEUE_H_
 #define _AX_QUEUE_H_
@@ -19,9 +20,9 @@ struct buf_chunk_t {
 };
 
 struct var_msg_t {
-	int length;   //length of following carry data (not include this struct)
+	int length;   //length of following carry data ( start from data[1] )
 	int type;
-	char data[1];
+	char data[1];  //data pointer (do pointer coversion according to type)
 };
 
 //queue carry variable length data

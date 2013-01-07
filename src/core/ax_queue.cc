@@ -1,3 +1,4 @@
+//queue for variable length message
 
 #include "utest.h"
 #include "ax_debug.h"
@@ -52,7 +53,15 @@ queue_t::~queue_t()
 	}
 }
 
-//push to prepare space before call back() to copy actual data
+//push back to queue 
+//param:  
+//n  -- length of carry data
+//type --  carry data type. decide how to do pointer coversion 
+//         by queue reader
+//vdata -- if NULL, no memcpy, call back() to fetch data, and do 
+//         the assignment by caller.(This usage can avoid extra
+//         malloc/new for command message)
+//         if not NULL do memcpy.
 int queue_t::push(int n, int type, void* vdata)
 {
 	var_msg_t *pheader;
@@ -62,6 +71,7 @@ int queue_t::push(int n, int type, void* vdata)
 	int actual_n = n;
 	RT_ASSERT(n > 0);
     total_len = actual_n + offsetof(var_msg_t, data);
+	if (total_len < sizeof(var_msg_t)) total_len = sizeof(var_msg_t);
 
 	if (total_len > capacity_limit) return AX_RET_FULL;
 	if (pos_end_ + total_len < chunk_end_ ->capacity) {
@@ -87,7 +97,9 @@ int queue_t::push(int n, int type, void* vdata)
 	}
 	pheader->length = actual_n;
 	pheader->type = type;
-	memcpy(pheader->data, vdata, n);
+	if (vdata != NULL) {
+		memcpy(pheader->data, vdata, n);
+	}
 	chunk_back_ = chunk_end_;
 	chunk_back_->nelems++;
 	pos_back_ = pos_end_;
@@ -96,7 +108,7 @@ int queue_t::push(int n, int type, void* vdata)
 	return AX_RET_OK;
 }
 
-//shift the head data after call front and processed the data
+//pop front data after calling front() and finish read/processing the data
 void queue_t::pop()
 {
 	var_msg_t *pfront;
@@ -132,12 +144,15 @@ void queue_t::pop()
 	}
 }
 
+//fetch queue front
 var_msg_t* queue_t::front()
 {
 	char* p = (char*)(chunk_begin_->data);
 	return (var_msg_t*)(p + pos_begin_);
 }
 
+//get the pointer of queue back 
+//usually after push with NULL data
 var_msg_t* queue_t::back()
 {
 	char* p;
