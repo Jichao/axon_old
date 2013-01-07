@@ -2,6 +2,8 @@
 #ifndef _AX_QUEUE_H_
 #define _AX_QUEUE_H_
 
+#include <cstddef>
+
 namespace axon {
 
 struct buf_chunk_t {
@@ -19,6 +21,7 @@ struct buf_chunk_t {
 struct var_msg_t {
 	int length;   //length of following carry data (not include this struct)
 	int type;
+	char data[1];
 };
 
 //queue carry variable length data
@@ -28,17 +31,22 @@ public:
 	queue_t(int n);
 	~queue_t();
 
-	void push(int n);
+	int push(int n, int type, void* data);
 	void pop();
+	int count() { return nelems_; }
 	var_msg_t* front();
 	var_msg_t* back();
 
 protected:
+	//upper limit of each chunk
+	static const int capacity_limit = 4000000;
+	
 	//disable copy construction
 	queue_t (const queue_t&);
 	const queue_t &operator = (const queue_t &);
 
 protected:
+	int each_capacity_;
 	buf_chunk_t *chunk_spare_;
 	buf_chunk_t *chunk_begin_;
 	int pos_begin_;
@@ -48,7 +56,7 @@ protected:
 	//last available chunk(capacity)
 	buf_chunk_t *chunk_end_;
 	int pos_end_;
-
+	int nelems_;
 };
 
 

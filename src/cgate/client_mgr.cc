@@ -105,7 +105,6 @@ EvPoller* ClientMgr::get_poller()
 void ClientMgr::on_peer_close(int fd, int hid)
 {
 	int vfd;
-	Connect *conn;
 	vfd = (long)(active_hids_->remove_get(hid));
 }
 
