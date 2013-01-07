@@ -35,13 +35,19 @@ queue_t::queue_t(int n)
 
 queue_t::~queue_t()
 {
+	buf_chunk_t *p;
 	while(1) {
 		if (chunk_begin_ == chunk_end_) {
 			delete chunk_begin_;
 			break;
 		}
-		buf_chunk_t *p = chunk_begin_;
+		p = chunk_begin_;
 		chunk_begin_ = chunk_begin_->next;
+		delete p;
+	}
+	while(chunk_spare_ != NULL)  {
+		p = chunk_spare_;
+		chunk_spare_ = chunk_spare_->next;	
 		delete p;
 	}
 }
