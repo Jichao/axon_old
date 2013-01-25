@@ -23,8 +23,8 @@ private:
 	queue_t *queue;
 	var_msg_t *w;
 	var_msg_t *r;
-	var_msg_t *f;
-
+	var_msg_t *c;
+	AxMutex mt_;
 };
 
 

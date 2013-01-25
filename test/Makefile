@@ -23,4 +23,4 @@ test: tc_core
 	@echo "finish build test"
 
 tc_core: tc_core.o
-	g++ $(INCLUDES) $(OPTIMIZE) -o tc_core $(OBJ_DIR)/tc_core.o $(LINK_ALL) -lax_core $(DONT_LINK_ALL)
+	g++ $(INCLUDES) $(OPTIMIZE) -pthread -o tc_core $(OBJ_DIR)/tc_core.o $(LINK_ALL) -lax_core $(DONT_LINK_ALL)
