@@ -92,8 +92,7 @@ int buffer_t::push(buffer_t &rhs)
 	return push(rhs.data(), rhs.len());
 }
 
-//push in the end
-int buffer_t::push(const char* src, uint32_t size)
+int buffer_t::prepare(uint32_t size)
 {
 	uint32_t need;
 	char *newp;
@@ -106,6 +105,19 @@ int buffer_t::push(const char* src, uint32_t size)
 		RT_ASSERT(newp != NULL);
 		buf_ = newp;
 	}
+}
+
+void buffer_t::flush_push(int actual_size)
+{
+	RT_ASSERT(end_ + actual_size <= alloc_size_);
+	len_ += actual_size;
+	end_ += actual_size;	
+}
+
+//push in the end
+int buffer_t::push(const char* src, uint32_t size)
+{
+	prepare(size);
 	memcpy(buf_ + end_, src, size);
 	len_ += size;
 	end_ += size;

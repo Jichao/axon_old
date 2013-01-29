@@ -1,30 +1,53 @@
+//pipe between threads using socketpair
+// 0 for main thread , 1 for worker thread
+// thread 0 is responsible for tpipe create and destruction
+
 
 #ifndef _AX_TPIPE_H_
 #define _AX_TPIPE_H_
 
 #include "ax_queue.h"
+#include "ax_buffer.h"
+#include "fd_poller.h"
 
 namespace axon {
 
-class tpipe_t
+//callback function.
+//don't reference pointer of "data" outside the callback function.
+//it will be invalid later. copy them if needed.
+typedef void (*pipe_cbfunc) (void* pobj, var_msg_t* data);
+
+class tpipe_t : IFdEventReactor
 {
 public:
 	tpipe_t();
 	~tpipe_t();
-
-	void push(var_msg_t *v);
-	void read(var_msg_t *v);
-	int probe();
+	void init(int side, EvPoller* poller, pipe_cbfunc cb_read, void* cbobj);
+	int get_fd0() { return pinfo_[0].fd_; }  //usually a for main thread
+	int get_fd1() { return pinfo_[1].fd_; }  //b for worker thread
+	int write(int side, int payload_len, int type, char* payload);
+	
+	virtual void on_ev_read(int fd);
+	virtual void on_ev_write(int fd);
 
 private:
-	tpipe_t (const tpipt_t &);
+	typedef struct tpipe_fd_info_s {
+		int fd_;
+		buffer_t *wbuf_;
+		buffer_t *rbuf_;
+		pipe_cbfunc cb_read_;
+		ev_handle_t ev_h_;
+		EvPoller *poller_;
+		void* cbobj_;
+	} tpipe_fd_info_t;
+
+	//disable copy constructor
+	tpipe_t(const tpipe_t& rhs);
 	const tpipe_t &operator = (const tpipe_t&);
+	
 private:
-	queue_t *queue;
-	var_msg_t *w;
-	var_msg_t *r;
-	var_msg_t *c;
-	AxMutex mt_;
+	static const int init_buf_size = 32000;  //32K init cache
+	tpipe_fd_info_t pinfo_[2];
 };
 
 

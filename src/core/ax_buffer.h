@@ -9,6 +9,15 @@
 
 namespace axon {
 
+#define VAR_MSG_HLEN (offsetof(var_msg_t, data))
+
+//variable length msg
+struct var_msg_t {
+	int length;   //length of following carry data ( start from data[1] )
+	int type;
+	char data[1];  //data pointer (do pointer coversion according to type)
+};
+
 class buffer_t 
 {
 public:
@@ -31,11 +40,17 @@ public:
 	void push(short n);
 	void push(int n);
 
+	//expose buffer to caller to save memory copy
+	//prepare space first
+	int prepare(uint32_t size);
+	void flush_push(int actual_size);
+
 
 	void shift();
 	uint32_t len() { return len_; }
 	uint32_t capacity() { return alloc_size_; }
 	char* data() { return buf_ + start_; }
+	char* tail() { return buf_ + end_; }
 	void reset(uint32_t size);
 	//abandon the data, reset position pointer
 	void clear();
@@ -49,6 +64,7 @@ private:
 	uint32_t alloc_size_;   //capacity  
 	uint32_t start_;  //valid data start 
 	uint32_t end_;    //valid data end
+	uint32_t prepare_end_;   //prepare to flush
 };
 
 

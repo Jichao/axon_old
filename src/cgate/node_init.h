@@ -27,6 +27,9 @@ public:
 	static string_t logpath;
 	static string_t workdir;
 	static int timetick;
+	static int client_rbuf_size;
+	static int worker_num;
+	static int max_connect;
 };
 
 #endif

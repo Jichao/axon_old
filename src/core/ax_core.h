@@ -10,3 +10,7 @@
 #include "os_misc.h"
 #include "kqueue.h"
 #include "epoll.h"
+#include "ax_thread.h"
+#include "ax_queue.h"
+#include "ax_tpipe.h"
+

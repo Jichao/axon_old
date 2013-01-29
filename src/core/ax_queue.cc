@@ -1,4 +1,5 @@
-//queue for variable length message
+//thread safe queue for variable length message
+//
 
 #include "utest.h"
 #include "ax_debug.h"
@@ -60,7 +61,7 @@ queue_t::~queue_t()
 //         by queue reader
 //vdata -- if NULL, no memcpy, call back() to fetch data, and do 
 //         the assignment by caller.(This usage can avoid extra
-//         malloc/new for command message)
+//         malloc/new for command message) but no thread safe guaranteed!!!
 //         if not NULL do memcpy.
 int queue_t::push(int n, int type, void* vdata)
 {
@@ -70,10 +71,11 @@ int queue_t::push(int n, int type, void* vdata)
 	int total_len;
 	int actual_n = n;
 	RT_ASSERT(n > 0);
-    total_len = actual_n + offsetof(var_msg_t, data);
+    total_len = actual_n + VAR_MSG_HLEN;
 	if (total_len < sizeof(var_msg_t)) total_len = sizeof(var_msg_t);
 
 	if (total_len > capacity_limit) return AX_RET_FULL;
+	mt_.lock();
 	if (pos_end_ + total_len < chunk_end_ ->capacity) {
 		//shift to next pointer
 		cp = (char*)(chunk_end_->data);
@@ -105,18 +107,27 @@ int queue_t::push(int n, int type, void* vdata)
 	pos_back_ = pos_end_;
 	pos_end_ += total_len;
 	++nelems_ ;
+	mt_.unlock();
 	return AX_RET_OK;
 }
 
 //pop front data after calling front() and finish read/processing the data
+// !!!Warning: 
+// No thread safe guranteed which data reference front() after pop()!!!
+// any data reference to queue's chunk should copy else where after pop()
 void queue_t::pop()
 {
 	var_msg_t *pfront;
 	buf_chunk_t *pchunk;
-	if (chunk_begin_->nelems == 0) return;	
+
+	mt_.lock();
+	if (chunk_begin_->nelems == 0) {
+		mt_.unlock();
+		return;	
+	}
 
 	pfront = front();
-	pos_begin_ += offsetof(var_msg_t, data) + pfront->length;
+	pos_begin_ += VAR_MSG_HLEN + pfront->length;
 	chunk_begin_->nelems--;
 	--nelems_;
 
@@ -142,6 +153,7 @@ void queue_t::pop()
 		}
 		pos_begin_ = 0;
 	}
+	mt_.unlock();
 }
 
 //fetch queue front

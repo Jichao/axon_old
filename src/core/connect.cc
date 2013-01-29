@@ -62,11 +62,11 @@ void Connect::close()
 int Connect::read()
 {
 	int nbytes;
-	static char tmpbuf[2048];
 	RT_ASSERT(rbuf_ != NULL);
-	nbytes = ::read(fd_, tmpbuf, 2048);
+	rbuf_->prepare(2048);
+	nbytes = ::read(fd_, rbuf_->tail(), 2048);
 	if (nbytes <= 0) return nbytes;
-	rbuf_->push(tmpbuf, nbytes);
+	rbuf_->flush_push(nbytes);
 	return nbytes;
 }
 

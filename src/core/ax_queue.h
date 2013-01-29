@@ -4,6 +4,8 @@
 #define _AX_QUEUE_H_
 
 #include <cstddef>
+#include "ax_thread.h"
+#include "ax_buffer.h"
 
 namespace axon {
 
@@ -19,11 +21,6 @@ struct buf_chunk_t {
 	buf_chunk_t *next;
 };
 
-struct var_msg_t {
-	int length;   //length of following carry data ( start from data[1] )
-	int type;
-	char data[1];  //data pointer (do pointer coversion according to type)
-};
 
 //queue carry variable length data
 class queue_t
@@ -58,6 +55,7 @@ protected:
 	buf_chunk_t *chunk_end_;
 	int pos_end_;
 	int nelems_;
+	AxMutex mt_;
 };
 
 
