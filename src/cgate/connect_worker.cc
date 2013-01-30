@@ -2,20 +2,32 @@
 //it may be run in main thread or a separate thread(different poller)
 
 #include "connect_worker.h"
+#include "node_init.h"
 
-ConnectWorker::ConnectWorker(EvPoller* poller, uint32_t max_connect, uint32_t rsize, uint32_t wsize)
+ConnectWorker::ConnectWorker(uint32_t max_connect, uint32_t rsize, uint32_t wsize)
 {
-	poller_ = poller;
+	poller_ = new EvPoller(max_connect, NodeConf::timetick);
 	rbuf_size_ = rsize;
 	wbuf_size_ = wsize;
 	max_connect_ = max_connect;
 	container_ = new ConnectContainer(max_connect, this, rsize, wsize);
+	mailbox_ = NULL;
 }
 
 ConnectWorker::~ConnectWorker()
 {
 	poller_ = NULL;
 	delete container_;
+}
+
+//thread function of connect worker
+void ConnectWorker::thread_worker_fn(void * arg)
+{
+	worker_init_t *pinit = (worker_init_t*)arg;
+	ConnectWorker *pworker = new ConnectWorker(pinit->max_conn, NodeConf::client_rbuf_size, 256);
+	pworker->mailbox_ = pinit->mailbox;
+	pworker->mailbox_->init(1, pworker->poller_, on_mailbox_read, pworker);
+	//loop
 }
 
 Connect* ConnectWorker::get_connect(int vfd, int hid)
@@ -87,5 +99,13 @@ void ConnectWorker::process_data(Connect* conn)
 {
 
 	decrypt_client_data(conn);
+
+}
+
+
+//message from main thread
+void ConnectWorker::on_mailbox_read(void* pobj, var_msg_t* data)
+{
+
 
 }

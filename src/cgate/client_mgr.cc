@@ -2,33 +2,78 @@
 #include "node_init.h"
 #include "connect_worker.h"
 #include "client_mgr.h"
+#include "worker_proto.h"
 
 using namespace axon;
 
 ClientMgr::ClientMgr(EvPoller *poller) : inited_(0), client_listener_(NULL)
 {
-	worker_ = NULL;
 	hid_ = 1;   //start from 1
 	active_hids_ = NULL;
 	main_poller_ = poller;
+	workers_ = NULL;
 }
 
 ClientMgr::~ClientMgr()
 {
-	delete worker_;
 	delete client_listener_;
 	delete active_hids_;
+	if (workers_) {
+		for (int i=0; i<worker_num_; i++) {
+			if (workers_[i].status > 0) {
+				workers_[i].thr.stop();
+			}
+		}
+		delete[] workers_;
+	}
 }
 
-void ClientMgr::init(uint32_t max_connect, uint32_t rsize, uint32_t wsize, uint16_t client_port, uint16_t backlog)
+void ClientMgr::init(uint16_t client_port, uint16_t backlog, int worker_num)
 {
 	
-	active_hids_ = new HashMapInt(max_connect * 2 / 3);
+	active_hids_ = new HashMapInt(NodeConf::max_connect * 2 / 3);
 	client_listener_ = new Listener;
-	worker_ = new ConnectWorker(main_poller_, max_connect, rsize, wsize);
 	client_listener_->init(this, client_port, backlog);
+	RT_ASSERT(worker_num > 0);
+	if (worker_num > 32) {
+		//too much thread
+		worker_num = 32;
+	}
+	worker_num_ = worker_num;
+	workers_ = new thread_worker_t[worker_num_];
 
 	inited_ = 1;
+
+}
+
+//start connect worker
+int ClientMgr::start_worker()
+{
+	int i, ret;
+
+	//init worker first
+	if (!inited_) return AX_RET_ERROR;
+	for(i=0; i<worker_num_; i++) {
+		//init mailbox	
+		workers_[i].mailbox.init(0, main_poller_, on_mailbox_read, this);
+		workers_[i].status = 0;
+		workers_[i].active_conn = 0;
+		workers_[i].max_conn = NodeConf::max_connect / worker_num_ + 100;
+		workers_[i].info.max_conn = workers_[i].max_conn;
+		workers_[i].info.mailbox = &(workers_[i].mailbox);
+
+		ret = workers_[i].thr.start(ConnectWorker::thread_worker_fn, (void*)(&(workers_[i].info)));
+		if (ret == 0) {
+			workers_[i].status = 1;
+		}
+	}
+	return 0;
+}
+
+//static callback function
+void ClientMgr::on_mailbox_read(void *pobj, var_msg_t *data)
+{
+	ClientMgr *mgr = (ClientMgr*)pobj;
 }
 
 int ClientMgr::listen()
@@ -81,18 +126,32 @@ void ClientMgr::on_listen_read(Listener *ls)
 //accept new socket and dispatch to a worker
 int ClientMgr::on_accept_new_connect(int sockfd, string_t ip, uint16_t port)
 {
-	Connect* conn;
+	int load, select = 0;
+	tpipe_t *mailbox;
+	newconn_msg_t msg;
 	//accept
 	RT_ASSERT(inited_ != 0);
 	
 	//set nonblocking here
 	ax_set_nonblock(sockfd);
 	++hid_;
-	conn = worker_->new_connect(sockfd, hid_, ip, port);
-	if (NULL == conn) {
-		return AX_RET_ERROR;
+	load = workers_[0].active_conn;
+	//find least burden worker
+	for(int i=1; i<worker_num_; i++) {
+		if (load > workers_[1].active_conn) {
+			load = workers_[1].active_conn;
+			select = i;
+		}	
 	}
-	active_hids_->insert(hid_, (void*)conn->index_);
+
+	mailbox = &(workers_[select].mailbox);
+	msg.fd = sockfd;
+	msg.hid = hid_;
+	msg.ip = ip;
+	msg.port = port;
+
+	mailbox->write(0, sizeof(msg), WT_NEWCONN, (char*)&msg);
+
 	return AX_RET_OK;
 }
 
@@ -115,7 +174,9 @@ int ClientMgr::close_connect(int hid)
 	Connect* conn;
 
 	vfd = (long)(active_hids_->remove_get(hid));
+	/*
 	conn = worker_->get_connect(vfd, hid);
 	if (NULL == conn) return AX_RET_ERROR;
+	*/
 	return AX_RET_OK;
 }

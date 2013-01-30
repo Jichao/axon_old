@@ -1,4 +1,5 @@
 //queue for variable length messages
+//no thread safe guaranteed
 
 #ifndef _AX_QUEUE_H_
 #define _AX_QUEUE_H_
@@ -9,6 +10,7 @@
 
 namespace axon {
 
+//memory chunk
 struct buf_chunk_t {
 	buf_chunk_t(int n);
 	~buf_chunk_t(); 
@@ -55,7 +57,6 @@ protected:
 	buf_chunk_t *chunk_end_;
 	int pos_end_;
 	int nelems_;
-	AxMutex mt_;
 };
 
 

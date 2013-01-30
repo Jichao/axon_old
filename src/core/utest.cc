@@ -25,6 +25,7 @@ int UTest::start_test()
 	DBG_WATCH("UTest::start_test");
 	while (p != NULL) {
 		if (p->enable) {
+			utest_log(p->name_,"begin_test");
 			p->run();
 			++c;
 		}

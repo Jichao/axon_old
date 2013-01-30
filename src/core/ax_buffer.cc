@@ -1,4 +1,4 @@
-//common buffer class
+//common buffer data sturcture
 
 #include "ax_buffer.h"
 #include "ax_debug.h"
@@ -8,18 +8,23 @@ namespace axon {
 
 buffer_t::buffer_t() : buf_(NULL), len_(0), alloc_size_(0), start_(0), end_(0)
 {
-
+	upper_limit_ = 0;
+	init_alloc_ = 0;
 }
 
 buffer_t::buffer_t(uint32_t n)
 {
 	alloc(n);
+	upper_limit_ = n * 4;  //4 times by default
+	init_alloc_ = n;
 }
 
 buffer_t::buffer_t(buffer_t &rhs)
 {
 	alloc(rhs.capacity());
 	push(rhs);
+	upper_limit_ = alloc_size_ * 4;
+	init_alloc_ = alloc_size_;
 }
 
 buffer_t::~buffer_t()
@@ -35,10 +40,27 @@ void buffer_t::alloc(uint32_t n)
 	alloc_size_ = n;
 }
 
+void buffer_t::shrink()
+{
+	//sometimes the buffer will expand much larger than init size,
+	//because consumer thread/process stuck/block
+	//shrink to save memory after summit.
+	char* newp = (char*)malloc(init_alloc_);
+	RT_ASSERT(newp != NULL);
+	if (len_ > 0) memcpy(newp, buf_ + start_, len_);
+	free(buf_);
+	buf_ = newp;
+	alloc_size_ = init_alloc_;
+}
+
 void buffer_t::shift()
 {
 	if (buf_ == NULL) return;
-	memmove(buf_, buf_ + start_, len_);
+	if (upper_limit_ > 0 && alloc_size_ > upper_limit_ && len_ < init_alloc_) {
+		shrink();
+	} else {
+		memmove(buf_, buf_ + start_, len_);
+	}
 	start_ = 0;
 	end_ = len_;
 }
@@ -53,6 +75,9 @@ int buffer_t::pop(uint32_t n)
 		start_ = 0;
 		end_ = 0;
 		len_ = 0;
+		if (upper_limit_ > 0 && alloc_size_ > upper_limit_) {
+			shrink();
+		}
 		return len;
 	}
 	start_ += n;
@@ -87,11 +112,13 @@ int buffer_t::pop_int()
 	return *p;
 }
 
+//push another buffer
 int buffer_t::push(buffer_t &rhs)
 {
 	return push(rhs.data(), rhs.len());
 }
 
+//prepare space
 int buffer_t::prepare(uint32_t size)
 {
 	uint32_t need;
@@ -105,10 +132,13 @@ int buffer_t::prepare(uint32_t size)
 		RT_ASSERT(newp != NULL);
 		buf_ = newp;
 	}
+	return alloc_size_;
 }
 
+//push_back with no data. just move the end_
 void buffer_t::flush_push(int actual_size)
 {
+	//after calling prepare, the mem space should be enough
 	RT_ASSERT(end_ + actual_size <= alloc_size_);
 	len_ += actual_size;
 	end_ += actual_size;	
@@ -118,6 +148,7 @@ void buffer_t::flush_push(int actual_size)
 int buffer_t::push(const char* src, uint32_t size)
 {
 	prepare(size);
+	RT_ASSERT(buf_ != NULL);
 	memcpy(buf_ + end_, src, size);
 	len_ += size;
 	end_ += size;
@@ -142,7 +173,7 @@ void buffer_t::push(int n)
 	push((char*)&n, (uint32_t)sizeof(int));
 }
 
-//resize the buffer
+//resize the buffer(keep the data)
 void buffer_t::reset(uint32_t size)
 {
 	char *newp;
@@ -168,12 +199,18 @@ void buffer_t::clear()
 	start_ = end_ = len_ = 0;
 }
 
+void buffer_t::set_shrink_limit(uint32_t n)
+{
+	upper_limit_ = n;
+}
+
 UTEST(buffer_t)
 {
 	char srcbuf[] = "abcdefghijklmnopqrstuvwxyz";
 	char* p;
 	buffer_t buf1(100);
 	buffer_t buf2;
+	buffer_t buf3(50);
 
 	buf1.push(srcbuf, 10);
 	p = buf1.data();
@@ -186,6 +223,23 @@ UTEST(buffer_t)
 	buf2.push(srcbuf, 10);
 	p = buf2.data();
 	UT_ASSERT(p[2] == 'c');
+	//expand and shrink
+	int uplimit = 1000;
+	buf3.set_shrink_limit(uplimit);
+	for(int i=0; i<200; i++) {
+		buf3.push(srcbuf, 10);
+	}
+	UT_ASSERT(buf3.capacity() > uplimit);
+	for(int i=0; i<200; i++) {
+		buf3.pop(10);
+	}
+	UT_LOGV("before shift: cap %d len:%d", buf3.capacity(), buf3.len());
+	//do a shift, then will shrink
+	for(int i=0; i<10; i++) {
+		buf3.push(srcbuf, 10);
+	}
+	UT_LOGV("buf capacity: %d len:%d", buf3.capacity(), buf3.len());
+	UT_ASSERT(buf3.capacity() < uplimit);
 }
 
 

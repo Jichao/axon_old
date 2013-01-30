@@ -75,7 +75,6 @@ int queue_t::push(int n, int type, void* vdata)
 	if (total_len < sizeof(var_msg_t)) total_len = sizeof(var_msg_t);
 
 	if (total_len > capacity_limit) return AX_RET_FULL;
-	mt_.lock();
 	if (pos_end_ + total_len < chunk_end_ ->capacity) {
 		//shift to next pointer
 		cp = (char*)(chunk_end_->data);
@@ -107,7 +106,6 @@ int queue_t::push(int n, int type, void* vdata)
 	pos_back_ = pos_end_;
 	pos_end_ += total_len;
 	++nelems_ ;
-	mt_.unlock();
 	return AX_RET_OK;
 }
 
@@ -120,9 +118,7 @@ void queue_t::pop()
 	var_msg_t *pfront;
 	buf_chunk_t *pchunk;
 
-	mt_.lock();
 	if (chunk_begin_->nelems == 0) {
-		mt_.unlock();
 		return;	
 	}
 
@@ -153,7 +149,6 @@ void queue_t::pop()
 		}
 		pos_begin_ = 0;
 	}
-	mt_.unlock();
 }
 
 //fetch queue front
@@ -175,15 +170,21 @@ var_msg_t* queue_t::back()
 
 UTEST(queue_t)
 {
-	char word[] = "hello,world!";
+	char word[] = "hello!";
 	var_msg_t *p;
 	queue_t g(100);
 
 	g.push(sizeof(word), 1, (void*)word);
 	p = g.back();
-	printf("%s", (char*)(p->data));
+	UT_ASSERT(!strcmp(word, (char*)(p->data)));
 	
-	g.push(sizeof(word), 1, (void*)word);
+	for (int i=0; i<1000; i++) {
+		g.push(sizeof(word), 2, (void*)word);
+	}
+	for (int i=0; i<1000; i++) {
+		g.pop();
+	}
+	UT_ASSERT(g.count() == 1);
 
 }
 

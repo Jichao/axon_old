@@ -7,7 +7,7 @@
 
 namespace axon {
 
-//reference to Facebook folly library FBString
+//learn from Facebook folly library FBString
 //small string use direct char[] ( < 22 byte in 64bit machine)
 //for larger string use heap memory.
 //balance the speed and memory usage according to application's statistis

@@ -1,4 +1,3 @@
-//
 //string class for axon engine
 
 #include "ax_debug.h"
@@ -64,10 +63,8 @@ string_t::~string_t()
 
 string_t& string_t::operator=(const string_t &rhs)
 {
-	if (type() == LARGER_STR) {
-		free(larger_.data_);
-	}
-
+	clear();
+	
 	if (rhs.type() == SMALL_STR) {
 		//just copy the whole thing
 		::memcpy(small_, rhs.small_, sizeof(small_));
@@ -84,19 +81,23 @@ string_t& string_t::operator=(const string_t &rhs)
 	}
 	return *this;
 }
+
 void string_t::assign(const char* s)
 {
 	uint32_t len_s = strlen(s);
-	if (len_s > capacity()) {
-		expand(len_s);
-	}
+	clear();
+	
 	if (len_s > MAX_SMALL_LEN) {
+		uint32_t alloc_size = len_s + 1;
+		//deep copy the string, alloc new space
+		larger_.data_ = (char*)malloc(alloc_size);
+		larger_.capacity_ = len_s;
 		::strcpy(larger_.data_, s);	
 		larger_.len_ = len_s;
+		small_[TYPE_CHAR] = LARGER_STR;
 	} else {
 		::strcpy(small_, s);
-		small_[TYPE_CHAR] &= TYPE_MASK;
-		small_[TYPE_CHAR] |= len_s & SMALL_LEN_MASK;
+		small_[TYPE_CHAR] = len_s & SMALL_LEN_MASK;
 	}
 }
 
@@ -154,9 +155,8 @@ void string_t::expand(uint32_t n)
 		char *newp = (char*)realloc(larger_.data_, alloc_size);
 		RT_ASSERT(newp != NULL);
 		larger_.data_ = newp;
-		return;
 	} else {
-		//won't shrink
+		//do nothing. won't shrink
 		return;
 	}	
 	larger_.capacity_ = n;
@@ -207,19 +207,23 @@ UTEST(string_t)
 	string_t ls("larger string test. I'm really really long enough");
 	string_t test_null(NULL);
 
-	UT_LOG("begin string_t test");
 	UT_LOGV("p:%s q:%s s:%s", p.c_str(), q.c_str(), s.c_str());
 	UT_LOGV("ls:%s", ls.c_str());
 	UT_LOGV("max small len: %d se_type=%d q_type=%d", string_t::MAX_SMALL_LEN, se.type(), q.type());
 	UT_ASSERT(q == s && q == "hello" && q.equal(s));
 	UT_ASSERT(p.equal("") && !p.equal(NULL));
 	//expand
-	q.strcat(se);
-	UT_ASSERT(q.len() == se.len() + 5);
 	p.expand(50);
 	UT_ASSERT(p.capacity() == 50);	
 	p = q;
 	UT_ASSERT(p == "hello");
+	//strcat
+	q.strcat(se);
+	UT_ASSERT(q.len() == se.len() + 5);
+	for(int i=0; i<1000; i++) {
+		p.assign("newass");
+	}
+	UT_ASSERT(p.len() == 6);
 }
 
 }  //namespace

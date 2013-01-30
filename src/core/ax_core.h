@@ -1,3 +1,4 @@
+//header of ax_core library
 
 #include "common_def.h"
 #include "ax_debug.h"

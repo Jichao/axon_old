@@ -11,11 +11,11 @@ namespace axon {
 
 #define VAR_MSG_HLEN (offsetof(var_msg_t, data))
 
-//variable length msg
+//variable length msg in a consecutive memory block
 struct var_msg_t {
 	int length;   //length of following carry data ( start from data[1] )
-	int type;
-	char data[1];  //data pointer (do pointer coversion according to type)
+	int type;     //make pointer conversion for "data[1]" according to type
+	char data[1];  //data pointer in subsequant memory address
 };
 
 class buffer_t 
@@ -26,7 +26,8 @@ public:
 	buffer_t(uint32_t n);
 	buffer_t(buffer_t &rhs);
 
-	void alloc(uint32_t n);
+	void set_shrink_limit(uint32_t n);
+
 	int pop(uint32_t n);
 	char pop_char();
 	//packed in little endian
@@ -40,17 +41,24 @@ public:
 	void push(short n);
 	void push(int n);
 
-	//expose buffer to caller to save memory copy
-	//prepare space first
+	//expose buffer to caller to avoid memory copy
+	//1. prepare space first, 
+	//2. fill data to address return by tail()
+	//3. flush_push() valid data size
 	int prepare(uint32_t size);
 	void flush_push(int actual_size);
-
+	char* tail() { 
+		if (buf_ == NULL) return NULL;
+		return buf_ + end_; 
+	}
 
 	void shift();
 	uint32_t len() { return len_; }
 	uint32_t capacity() { return alloc_size_; }
-	char* data() { return buf_ + start_; }
-	char* tail() { return buf_ + end_; }
+	char* data() { 
+		if (len_ <= 0 || buf_ == NULL) return NULL;
+		return buf_ + start_; 
+	}
 	void reset(uint32_t size);
 	//abandon the data, reset position pointer
 	void clear();
@@ -59,7 +67,13 @@ private:
 	//disable direct assignment
 	buffer_t& operator=(const buffer_t &rhs);
 
+	void alloc(uint32_t n);
+	void shrink();
+
 	char* buf_;
+	uint32_t upper_limit_;   //shrink threshold
+	uint32_t init_alloc_;     //capacity at the beginning
+
 	uint32_t len_;
 	uint32_t alloc_size_;   //capacity  
 	uint32_t start_;  //valid data start 

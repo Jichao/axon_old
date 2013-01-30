@@ -18,6 +18,9 @@ int NodeConf::hostnum = 10;
 string_t NodeConf::logpath("");
 string_t NodeConf::workdir("");
 int NodeConf::timetick = 100;
+int NodeConf::client_rbuf_size = 1024;
+int NodeConf::worker_num = 2;
+int NodeConf::max_connect = 1000;
 //net config
 
 
@@ -38,15 +41,15 @@ int NodeConf::init_node_conf(Json::Value *root)
 	timetick = root->get("timetick", 100).asInt();
 	net = root->get("net", 0);
 	if (net.isObject()) {
-		int port, backlog, max_conn;
-		int rsize;
+		int port, backlog;
 		port = net.get("client_port", 1234).asInt();
 		backlog = net.get("backlog", 10).asInt();
-		max_conn = net.get("max_connect", 1000).asInt();
-		rsize = net.get("client_rbuf", 1000).asInt();
-		g_main_poller = new EvPoller(max_conn, timetick);
+		max_connect = net.get("max_connect", 1000).asInt();
+		client_rbuf_size = net.get("client_rbuf", 1024).asInt();
+		worker_num = net.get("worker_num", 2).asInt();
+		g_main_poller = new EvPoller(100 + worker_num * 2, timetick);
 		g_client_mgr = new ClientMgr(g_main_poller);
-		g_client_mgr->init(max_conn, rsize, 100, port, backlog);
+		g_client_mgr->init(port, backlog, worker_num);
 	} else {
 		return AX_RET_ERROR;
 	}

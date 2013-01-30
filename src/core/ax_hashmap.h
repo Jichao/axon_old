@@ -1,4 +1,6 @@
 // hash table with iteration ability(addition link list)
+// support key type: string_t or int
+// Author: Daly 2012
 
 #ifndef _AX_HASHMAP_H_
 #define _AX_HASHMAP_H_
@@ -19,12 +21,29 @@
  *
  * */
 
+// Usage: ------------------------------
+//use as a normal hash table:
+//  HashMapInt xx(100);
+//  xx.insert(10, 10);
+//  int v = xx.remove_get(10);
+//uses as a LRU queue:
+//  xx.insert(10, 10);
+//  xx.insert(20, 20);
+//  xx.insert(30, 30);
+//  HashEntryInt p = xx.find(20);
+//  if (p != NULL) {
+//     //move to head
+//     xx.detach_link(p);
+//     xx.attach_link_head(p);
+//  }
+
 namespace axon {
 
 template<class _K>
 class hmap_t 
 {
 public:
+	//entry node in hash table
 	template<class _Key>
 	class hmap_entry_t 
 	{
@@ -39,12 +58,14 @@ public:
 		hmap_entry_t<_Key>* get_link_next() { return link_next; }
 			
 	public:
-		void* data;
+		void* data;   //reference data allocated outside
 
 	protected:	
 		_Key key;
+		//bucket list (solve hash conflict)
 		hmap_entry_t<_Key> *next;
 		hmap_entry_t<_Key> *prev;	
+		//whole linklist
 		hmap_entry_t<_Key> *link_next;
 		hmap_entry_t<_Key> *link_prev;
 	};
@@ -52,7 +73,6 @@ public:
 public:
 	hmap_t(uint32_t n)
 	{
-		RT_ASSERT(n > 0);
 		//alloc table
 		uint32_t alloc_size = n * sizeof(hmap_entry_t<_K>**);
 		table_ = (hmap_entry_t<_K>**)malloc(alloc_size);
@@ -91,7 +111,7 @@ public:
 
 		RT_ASSERT(n > 0);
 	    alloc_size = n * sizeof(hmap_entry_t<_K>*);	
-		new_table = (hmap_entry_t<_K>*)malloc(alloc_size);
+		new_table = (hmap_entry_t<_K>**)malloc(alloc_size);
 		RT_ASSERT(new_table != NULL);	
 		memset(new_table, 0, alloc_size);
 		//rehash nodes
@@ -102,10 +122,11 @@ public:
 				new_table[h]->prev = p;
 			}
 			p->next = new_table[h];
+			p->prev = NULL;
 			new_table[h] = p;	
 			p = p->link_next;
 		}
-		nslot_ = alloc_size;
+		nslot_ = n;
 		free(table_);
 		table_ = new_table;
 	}
@@ -149,7 +170,6 @@ public:
 		uint32_t h = do_hash(key) % nslot_;
 		hmap_entry_t<_K> *entry;
 		entry = alloc_entry();
-		DBG_WATCHV("hashmap. insert. h=%d table_[h]=%p", h, table_[h]);
 		if (table_[h] != NULL) {
 			table_[h]->prev = entry;
 		}
@@ -163,6 +183,7 @@ public:
 		++size_;
 	}
 
+	//return: NULL if key not found 
 	void* get_data(_K key)
 	{
 		hmap_entry_t<_K>* p = find(key);
@@ -176,6 +197,7 @@ public:
 		hmap_entry_t<_K> *entry;
 		entry = table_[h];
 		while(entry != NULL) {
+			//key type must implement == operator
 			if (entry->key == key) return entry;
 			entry = entry->next;
 		}
@@ -207,13 +229,13 @@ public:
 		return data;
 	}
 
+	//don't refer the entry again after remove
 	void remove(hmap_entry_t<_K> *entry)
 	{
 		void *data;
 		if (NULL == entry) return;
 		detach(entry);
 		data = entry->data;
-		//don't refer the entry again after remove
 		delete entry;
 	}
 
@@ -253,12 +275,13 @@ public:
 	void attach_link_head(hmap_entry_t<_K> *entry)
 	{
 		RT_ASSERT(entry != NULL);
+		entry->link_prev = NULL;
 		if (link_head_ == NULL) {
+			entry->link_next = NULL;
 			link_head_ = entry;
 			return;
 		}
-	
-		entry->link_prev = NULL;	
+
 		entry->link_next = link_head_;
 		link_head_->link_prev = entry;
 		link_head_ = entry;

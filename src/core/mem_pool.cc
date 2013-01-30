@@ -14,11 +14,13 @@ namespace axon {
 MemPool::MemPool(uint32_t n, uint32_t elt_size) 
 {
 	if (elt_size < sizeof(int) + 1) elt_size = sizeof(int) + 1;
-	buf_ = (char*)malloc(n * offset_);
-	RT_ASSERT(buf_ != NULL);
-
 	elt_size_ = elt_size;
 	offset_ = elt_size_ + 1;  //need one more byte
+
+	buf_ = (char*)malloc(n * offset_);
+	RT_ASSERT(buf_ != NULL);
+	memset(buf_, 0, n*offset_);
+
 	buf_end_ = buf_ + n * offset_;
 	free_node_ = 0;
 	capacity_ = n;
