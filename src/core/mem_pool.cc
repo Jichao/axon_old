@@ -1,4 +1,5 @@
-//simple memory pool
+//simple pre allocated memory pool
+//it won't auto expand, it it's full return a new node by normal malloc()
 
 #include "ax_debug.h"
 #include "utest.h"
@@ -13,8 +14,9 @@ namespace axon {
 // (this byte help to check memory boundary when memory bug occur) 
 MemPool::MemPool(uint32_t n, uint32_t elt_size) 
 {
-	if (elt_size < sizeof(int) + 1) elt_size = sizeof(int) + 1;
+
 	elt_size_ = elt_size;
+	if (elt_size_ < sizeof(int) + 1) elt_size_ = sizeof(int) + 1;
 	offset_ = elt_size_ + 1;  //need one more byte
 
 	buf_ = (char*)malloc(n * offset_);

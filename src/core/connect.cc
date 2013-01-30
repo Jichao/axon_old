@@ -1,4 +1,5 @@
-
+//TCP connect
+//
 #include "connect.h"
 #include "os_misc.h"
 
@@ -7,6 +8,7 @@ namespace axon {
 Connect::Connect() : mgr_(NULL), next_(NULL)
 {
 	rbuf_ = wbuf_ = NULL;
+	fd_ = 0;
 	reset();
 }
 
@@ -53,16 +55,19 @@ void Connect::reset()
 	status_ = 0;
 }
 
+//close socket and reset
 void Connect::close()
 {
 	if (fd_ >= 0) ::close(fd_);
 	reset();
 }
 
+//read bytes
 int Connect::read()
 {
 	int nbytes;
 	RT_ASSERT(rbuf_ != NULL);
+	//rbuf at least 2KB
 	rbuf_->prepare(2048);
 	nbytes = ::read(fd_, rbuf_->tail(), 2048);
 	if (nbytes <= 0) return nbytes;

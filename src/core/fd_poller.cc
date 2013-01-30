@@ -9,6 +9,7 @@ FdPollerBase::FdPollerBase(uint32_t maxn, int timetick) : timetick_(timetick_)
 	fdmap_ = new HashMapInt(maxn);
 	timer_ = new EvTimer(timetick_);
 	max_fds_ = maxn;
+	tm_last_ = 0;
 }
 
 FdPollerBase::~FdPollerBase()
@@ -87,24 +88,25 @@ int FdPollerBase::set_reactor(int fd, uint32_t h, IFdEventReactor *reactor)
 	return 0;
 }
 
+//return time pass from last call. (unit: ms)
+uint32_t FdPollerBase::get_timepass()
+{
+	struct timeval tv;
+	uint64_t tm_now;
+	uint32_t pass;
+	gettimeofday(&tv, NULL);
+    tm_now = tv.tv_sec * 1000 + (tv.tv_usec / 1000);
+	if (tm_last_ == 0) tm_last_ = tm_now;
+	pass = tm_now - tm_last_;	
+	tm_last_ = tm_now;
+	return pass;
+}
+
 int FdPollerBase::process()
 {
-	int timeout;
-	uint32_t tick_remain;
-	uint32_t timepass;
 	RT_ASSERT(timer_ != NULL);
 	timer_->timer_routine();
-	timepass = timer_->get_timepass();
-	tick_remain = timepass % timetick_;
-
-	if (tick_remain > 0 || timepass == 0) {
-		timeout = timetick_ - tick_remain;
-	} else {
-		timeout = 1;   //poll with nearly no timeout
-	}
-
-	timeout = timetick_;
-	do_poll(timeout);
+	do_poll(timetick_);
 	return 0;
 }
 

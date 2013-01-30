@@ -1,4 +1,4 @@
-//network connection and socket event wrapper
+//network connection and TCP socket event wrapper
 //
 
 #ifndef _AX_CONNECT_H_

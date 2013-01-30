@@ -2,6 +2,7 @@
 #include "ax_tpipe.h"
 #include "stdheader.h"
 #include "ax_debug.h"
+#include "os_misc.h"
 #include <cstddef>
 
 namespace axon {
@@ -12,9 +13,12 @@ tpipe_t::tpipe_t()
 	int sv[2];
 	int ret;
     ret	= socketpair (AF_UNIX, SOCK_STREAM, 0, sv);
+	//create before thread create. must be ok. 
 	RT_ASSERT(ret == 0);
 	pinfo_[0].fd_ = sv[0];
 	pinfo_[1].fd_ = sv[1];
+	ax_set_nonblock(sv[0]);
+	ax_set_nonblock(sv[1]);
 	for (int i=0; i<2; i++) {
 		pinfo_[i].wbuf_ = new buffer_t(init_buf_size);
 		pinfo_[i].rbuf_ = new buffer_t(init_buf_size);
@@ -30,15 +34,16 @@ tpipe_t::~tpipe_t()
 	for(int i=0; i<2; i++) {
 		delete pinfo_[i].wbuf_;
 		delete pinfo_[i].rbuf_;
-		::close(pinfo_[i].fd_);
 		if (pinfo_[i].poller_)  {
 			pinfo_[i].poller_->rm_fd(pinfo_[i].fd_);
 		}
+		::close(pinfo_[i].fd_);
 	}
 }
 
 void tpipe_t::init(int side, EvPoller* poller, pipe_cbfunc cb_read, void* cbobj)
 {
+	RT_ASSERT(poller != NULL);
 	RT_ASSERT(side == 0 || side == 1);
 	pinfo_[side].poller_ = poller;
 	pinfo_[side].ev_h_ = poller->add_fd(pinfo_[side].fd_, this);
@@ -67,8 +72,8 @@ void tpipe_t::on_ev_read(int fd)
 	buf = pinfo_[side].rbuf_;
 	buf->prepare(8182);
 	nbytes = ::read(pinfo_[side].fd_, buf->tail(), 8182);
-	if (nbytes <= 0) {
-		//error
+	if (nbytes < 0) {
+		//error, ignore right now. handle it later
 		return;
 	}
 	buf->flush_push(nbytes);	
@@ -104,7 +109,7 @@ void tpipe_t::on_ev_write(int fd)
 	}
 	buf = pinfo_[side].wbuf_;
 	nbytes = ::write(fd, buf, buf->len());	
-	if (nbytes <= 1) {
+	if (nbytes < 0) {
 		//error
 		return;
 	}
@@ -123,13 +128,15 @@ int tpipe_t::write(int side, int payload_len, int type, char* payload)
 	var_msg_t msg;
 	RT_ASSERT(side == 0 || side == 1);
 	fd = pinfo_[side].fd_;
+	if (pinfo_[side].poller_ == NULL) {
+		//not init yet
+		return -1;
+	}
 	msg.length = payload_len;
 	msg.type = type;
 	nbytes = ::write(fd, &msg, VAR_MSG_HLEN);
-	if (nbytes < 0) {
-		//error
-		return 0;
-	}
+	if (nbytes < 0) return -1;
+
 	if (nbytes < VAR_MSG_HLEN) {
 		remain = VAR_MSG_HLEN - nbytes;
 		pinfo_[side].wbuf_->push(((char*)&msg) + nbytes, remain);
@@ -137,6 +144,8 @@ int tpipe_t::write(int side, int payload_len, int type, char* payload)
 		return 0;	
 	}
 	nbytes = ::write(fd, payload, payload_len);
+	if (nbytes < 0) return -1;
+
 	if (nbytes < payload_len) {
 		remain = payload_len - nbytes;
 		pinfo_[side].wbuf_->push(payload + nbytes, remain);

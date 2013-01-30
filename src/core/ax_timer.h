@@ -25,6 +25,9 @@ public:
 		void* data;
 		TimerEntry *next;
 	};
+	//max_time == SLOT_PER_WHEEL^TOTAL_WHEEL * tick_interval_
+	//process muset restart when reach max_time
+	//max_time nearly 3 years
 	enum {
 		SLOT_PER_WHEEL = 1024,
 		TOTAL_WHEEL = 3,
@@ -35,7 +38,6 @@ public:
 	~EvTimer();
 
 public:
-	uint32_t get_timepass();
 	int add_timer(ev_timer_proc cbfunc, void* data, uint32_t timeout);
 	int del_timer(int handle);
 	void timer_routine();		
@@ -46,15 +48,13 @@ private:
 	void process_tick();
 
 private:
-	static const int kEntryPoolSize = 1000;   //timer entry maximum
+	static const int kEntryPoolSize = 10000;   //timer entry pool maximum
 
 	uint32_t ticknow_;
 	uint32_t tick_interval_;  //the time tick unit
 
 	//unit below: millisecond of gettimeofday
 	uint64_t tm_now_;
-	uint64_t tm_start_;  //wheel start time
-	uint64_t tm_last_;
 	uint64_t tm_slap_;	
 	int handle_;
 

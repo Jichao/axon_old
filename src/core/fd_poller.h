@@ -69,6 +69,7 @@ public:
 	virtual int do_poll(int timeout) = 0;
 	int add_timer_event(ev_timer_proc cbfunc, void* data, uint32_t timeout);
 	int del_timer_event(int handle);
+	uint32_t get_timepass();
 
 protected:
 	HashMapInt *fdmap_;
@@ -76,6 +77,7 @@ protected:
 	int timetick_;  //unit:ms. timetick for each poll(1000ms/server frame rate)
 	ev_handle_t handle_;  //event handle
 	uint32_t max_fds_;   //max number of fd
+	uint64_t tm_last_;   //last process
 };
 
 }  //namespace
