@@ -16,9 +16,9 @@ public:
 	KqueuePoller(uint32_t maxn, int timetick);
 	~KqueuePoller();
 
-	virtual int add_event(int fd, uint32_t h, int flag);
-	virtual int del_event(int fd, uint32_t h, int flag);
-	virtual int do_poll(int timeout);
+	virtual int add_event(int fd, int flag);
+	virtual int del_event(int fd, int flag);
+	virtual int do_poll();
 
 private:
 	int kqueue_fd_;

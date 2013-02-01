@@ -6,6 +6,13 @@
 
 using namespace axon;
 
+//hid store thread no, and auto increment to ensure unique
+// | thread no 6bit | 26bit auto increment |
+
+#define HID_THR_BITS  26
+#define HID_THR_MASK 0x3F
+
+
 class ConnectWorker: public IConnectHandler
 {
 public:
@@ -14,9 +21,12 @@ public:
 
 	ConnectWorker(uint32_t max_connect, uint32_t rsize, uint32_t wsize);
 	~ConnectWorker();
-	Connect* new_connect(int fd, int hid, string_t peer_ip, uint16_t peer_port);
+
+private:
+	Connect* new_connect(int fd, int hid, uint32_t peer_ip, uint16_t peer_port);
 	Connect* get_connect(int vfd, int hid);
 	void close_connect(int vfd, int hid);
+	void wait_close(Connect*);
 	virtual void on_read(Connect* conn);
 	virtual void on_write(Connect* conn);
 	void decrypt_client_data(Connect* conn);

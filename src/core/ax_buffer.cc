@@ -224,7 +224,7 @@ UTEST(buffer_t)
 	p = buf2.data();
 	UT_ASSERT(p[2] == 'c');
 	//expand and shrink
-	int uplimit = 1000;
+	uint32_t uplimit = 1000;
 	buf3.set_shrink_limit(uplimit);
 	for(int i=0; i<200; i++) {
 		buf3.push(srcbuf, 10);

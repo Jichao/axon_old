@@ -26,7 +26,7 @@ private:
 	int free_node_;    //free node link head( next Nth node instead of next pointer)
 	int capacity_;
 	int nalloc_;
-	int elt_size_;  //valid data size of each node
+	uint32_t elt_size_;  //valid data size of each node
 	int offset_;    //actual size of each node
 };
 

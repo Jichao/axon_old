@@ -20,16 +20,14 @@ EpollPoller::~EpollPoller()
 	epoll_fd_ = 0;
 }
 
-int EpollPoller::add_event(int fd, uint32_t h, int flag)
+int EpollPoller::add_event(int fd, int flag)
 {
 	struct epoll_event wep;
 	struct epoll_event rep;
-	PollerEntry *pe = find_entry(fd, h);
-	if (pe == NULL) return AX_RET_ERROR;
 
 	if (flag & EV_READ) {
 		rep.events = EPOLLIN;
-		rep.data.ptr = (void*)pe;
+		rep.data.ptr = NULL;
 		rep.data.fd = fd;
 		if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &rep) == -1) {
 			return AX_RET_ERROR;
@@ -38,7 +36,7 @@ int EpollPoller::add_event(int fd, uint32_t h, int flag)
 	}
 	if (flag & EV_WRITE) {
 		wep.events = EPOLLOUT;
-		wep.data.ptr = (void*)pe;
+		wep.data.ptr = NULL;
 		wep.data.fd = fd;
 		if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, fd, &wep) == -1) {
 			return AX_RET_ERROR;
@@ -49,13 +47,14 @@ int EpollPoller::add_event(int fd, uint32_t h, int flag)
 	return AX_RET_OK;
 }
 
-int EpollPoller::del_event(int fd, uint32_t h, int flag)
+int EpollPoller::del_event(int fd, int flag)
 {
 	PollerEntry *pe;
 	struct epoll_event rep;
 	struct epoll_event wep;
-	pe = find_entry(fd, h);
-	if (NULL == pe) return AX_RET_ERROR;
+	
+	if (fd < 0 || fd >= max_fds_) return AX_RET_ERROR;
+
 	if (flag & EV_READ) {
 		rep.events = EPOLLIN;
 		rep.data.fd = fd;
@@ -76,15 +75,14 @@ int EpollPoller::del_event(int fd, uint32_t h, int flag)
 	return AX_RET_OK;
 }
 
-int EpollPoller::do_poll(int timeout)
+int EpollPoller::do_poll()
 {
 	int events;
 	int fd;
 	struct epoll_event *ep;
-	PollerEntry *pe, *pmapfd;
 
-	if (timeout > 0) {
-		events = epoll_wait(epoll_fd_, event_list_, max_fds_, timeout);
+	if (timetick_ > 0) {
+		events = epoll_wait(epoll_fd_, event_list_, max_fds_, timetick_);
 	} else {
 		events = epoll_wait(epoll_fd_, event_list_, max_fds_, -1);
 	}
@@ -93,12 +91,9 @@ int EpollPoller::do_poll(int timeout)
 	for (int i=0; i<events; i++) {
 		ep = &event_list_[i];
 		fd = ep->data.fd;
-		pe = (PollerEntry*)ep->data.ptr;
-		pmapfd = (PollerEntry*)fdmap_->get_data(fd);
-		if (pmapfd == NULL) continue;
-		if (pmapfd->handle != pe->handle) continue;
-		if (pmapfd->ev_mask & EV_INVALID) {
-			del_event(fd, pe->handle, EV_READ | EV_WRITE);
+		pe = entry_[fd];
+		if (pe->status != FDS_ACTIVE) {
+			del_event(fd, EV_READ | EV_WRITE);
 			continue;
 		}
 		if (ep->events & EPOLLIN) {

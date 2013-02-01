@@ -23,7 +23,6 @@ tpipe_t::tpipe_t()
 		pinfo_[i].wbuf_ = new buffer_t(init_buf_size);
 		pinfo_[i].rbuf_ = new buffer_t(init_buf_size);
 		pinfo_[i].cb_read_ = NULL;
-		pinfo_[i].ev_h_ = 0;
 		pinfo_[i].poller_ = NULL;
 
 	}
@@ -35,7 +34,7 @@ tpipe_t::~tpipe_t()
 		delete pinfo_[i].wbuf_;
 		delete pinfo_[i].rbuf_;
 		if (pinfo_[i].poller_)  {
-			pinfo_[i].poller_->rm_fd(pinfo_[i].fd_);
+			pinfo_[i].poller_->close_fd(pinfo_[i].fd_);
 		}
 		::close(pinfo_[i].fd_);
 	}
@@ -46,10 +45,9 @@ void tpipe_t::init(int side, EvPoller* poller, pipe_cbfunc cb_read, void* cbobj)
 	RT_ASSERT(poller != NULL);
 	RT_ASSERT(side == 0 || side == 1);
 	pinfo_[side].poller_ = poller;
-	pinfo_[side].ev_h_ = poller->add_fd(pinfo_[side].fd_, this);
 	pinfo_[side].cbobj_ = cbobj;
 	pinfo_[side].cb_read_ = cb_read;
-	poller->add_event(pinfo_[side].fd_, pinfo_[side].ev_h_, EV_READ);
+	poller->add_fd(pinfo_[side].fd_, this);
 }
 
 //Warning: two thread share this callback function without any lock
@@ -74,6 +72,8 @@ void tpipe_t::on_ev_read(int fd)
 	nbytes = ::read(pinfo_[side].fd_, buf->tail(), 8182);
 	if (nbytes < 0) {
 		//error, ignore right now. handle it later
+		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK) return;
+		pinfo_[side].poller_->wait_close(pinfo_[side].fd_);
 		return;
 	}
 	buf->flush_push(nbytes);	
@@ -110,17 +110,18 @@ void tpipe_t::on_ev_write(int fd)
 	buf = pinfo_[side].wbuf_;
 	nbytes = ::write(fd, buf, buf->len());	
 	if (nbytes < 0) {
-		//error
+		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK) return;
+		pinfo_[side].poller_->wait_close(pinfo_[side].fd_);
 		return;
 	}
 	if (buf->len() < 1) {
 		//clear write buffer. del event
-		pinfo_[side].poller_->del_event(fd, pinfo_[side].ev_h_, EV_WRITE);
+		pinfo_[side].poller_->del_event(fd, EV_WRITE);
 	}
 }
 
 //write
-int tpipe_t::write(int side, int payload_len, int type, char* payload)
+int tpipe_t::write(int side, size_t payload_len, int type, char* payload)
 {
 	int fd;
 	int nbytes;
@@ -137,7 +138,7 @@ int tpipe_t::write(int side, int payload_len, int type, char* payload)
 	nbytes = ::write(fd, &msg, VAR_MSG_HLEN);
 	if (nbytes < 0) return -1;
 
-	if (nbytes < VAR_MSG_HLEN) {
+	if (nbytes < (int)VAR_MSG_HLEN) {
 		remain = VAR_MSG_HLEN - nbytes;
 		pinfo_[side].wbuf_->push(((char*)&msg) + nbytes, remain);
 		pinfo_[side].wbuf_->push(payload, payload_len);	

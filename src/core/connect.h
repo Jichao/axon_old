@@ -30,6 +30,13 @@ public:
 
 class ConnectContainer;
 
+//connection state
+enum enumConnectState {
+	CONN_EMPTY = 0,
+	CONN_ACTIVE = 1,
+	CONN_WAIT_CLOSE = 2,
+};
+
 //socket connection
 class Connect : public IFdEventReactor
 {
@@ -38,8 +45,6 @@ public:
 	Connect();
 	~Connect();
 	int init(IConnectHandler* mgr, int fd, int rsize, int wsize);
-	void close();
-	void reset();
 	int read();
 	bool is_active() { return fd_ > 0 && mgr_ != NULL && peer_port_ > 0;}
 
@@ -48,22 +53,23 @@ public:
 
 //direct manipulated by connection manager
 public:	
-	int fd_;
-	//addition tag variable
-	int index_;     //index in container
-	int status_;    //connection state machine variable
+	int fd_;   
+	int index_;  //index in container   
 	int hid_;     //identify unique connection in mgr_
+	//addition tag variable
+	uint8_t status_;    //connection state machine variable
+	uint8_t ident_;      //connection type or usage
 
-	string_t peer_ip_;
+	uint32_t peer_ip_;    //ipv4 ip int
 	uint16_t peer_port_;   //peer's port
 
-	ev_handle_t ev_handle_;	
 	buffer_t *rbuf_;
 	buffer_t *wbuf_;
 
 protected:
 	IConnectHandler *mgr_;   //manage class to handler socket process
-	Connect* next_;        //used as linklist
+	Connect* next_;        //used as linklist in order to iteration
+	Connect* prev_;
 };
 
 //a bundle of connections
@@ -80,12 +86,10 @@ public:
 	int capacity() { return capacity_; }
 
 private:
-	int max_ident_;
 	uint32_t rsize_ ;   //rbuffer size
 	uint32_t wsize_ ;   //wbuffer size
 	int count_;
 	int capacity_;
-	int max_vfd_;
 	Connect *connects_;  //connection array
 	Connect *head_;     //connect iterator begin
 	int *free_stack_;
@@ -102,19 +106,17 @@ public:
 
 	int init(IListenHandler* mgr, uint16_t port, int backlog);
 	int listen(EvPoller* poller);
-	void close();
 	virtual void on_ev_read(int fd);
 	virtual void on_ev_write(int fd);
 	int get_port() { return port_; }
 
 //direct manipulated by connection manager
 public:
-	ev_handle_t ev_handle_;
 	int backlog_;
 	int listening_;
 	int fd_;	
 	uint16_t port_;
-	int ident_;     //identify fd type to decide action in mgr_
+	uint8_t ident_;     //identify fd type to decide action in mgr_
 	IListenHandler *mgr_;
 };
 

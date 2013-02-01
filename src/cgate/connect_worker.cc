@@ -28,6 +28,9 @@ void ConnectWorker::thread_worker_fn(void * arg)
 	pworker->mailbox_ = pinit->mailbox;
 	pworker->mailbox_->init(1, pworker->poller_, on_mailbox_read, pworker);
 	//loop
+	while(1) {
+		pworker->poller_->process();
+	}
 }
 
 Connect* ConnectWorker::get_connect(int vfd, int hid)
@@ -38,31 +41,50 @@ Connect* ConnectWorker::get_connect(int vfd, int hid)
 	return c;
 }
 
-void ConnectWorker::close_connect(int vfd, int hid)
+//notity other before close
+void ConnectWorker::wait_close(Connect* c)
 {
-	Connect* c = container_->get_connect(vfd);
-	if (NULL == c) return;
-	c->close();
-	container_->free_connect(vfd);
+	RT_ASSERT(c);
+	poller_->wait_close(c->fd_);
+	//notify other node and wait close
 }
 
 
-Connect* ConnectWorker::new_connect(int fd, int hid, string_t peer_ip, uint16_t peer_port)
+//force close vfd
+void ConnectWorker::close_connect(int vfd, int hid)
+{
+	Connect* c;
+
+    c = container_->get_connect(vfd);
+	if (NULL == c) return;
+	if (c->hid_ != hid) {
+		//connection conflict !!!
+		return;
+	}
+	poller_->close_fd(c->fd_);
+	container_->free_connect(vfd);
+}
+
+//new connection
+Connect* ConnectWorker::new_connect(int fd, int hid, uint32_t peer_ip, uint16_t peer_port)
 {
 	int vfd = container_->alloc_connect(fd);
+	int ret;
 	Connect* conn;
 	if (vfd < 0) {
 		return NULL;  //no more connection to alloc
 	}	
 	conn = container_->get_connect(vfd);
 	RT_ASSERT(conn != NULL);
-	conn->init(this, fd, rbuf_size_, wbuf_size_);
+	ret = conn->init(this, fd, rbuf_size_, wbuf_size_);
+	if (ret < 0) {
+		//error
+		return NULL;
+	}
 	conn->hid_ = hid;
-	conn->index_ = vfd;
 	conn->peer_port_ = peer_port;
 	conn->peer_ip_ = peer_ip;
-	conn->ev_handle_ = poller_->add_fd(fd, conn);
-	poller_->add_event(fd, conn->ev_handle_, EV_READ);
+	poller_->add_fd(fd, conn);
 	return conn;
 }
 
@@ -74,9 +96,10 @@ void ConnectWorker::on_read(Connect* conn)
 	if (ret < 0 && (errno == EINTR || errno == EAGAIN)) {
 		return;   //no data, try next time
 	}
-	if (ret <= 0) {
+	if (ret == 0) return;
+	if (ret < 0) {
 		//client socket fail/close
-		this->close_connect(conn->index_, conn->hid_);
+		wait_close(conn);
 		return;
 	}
 	process_data(conn);

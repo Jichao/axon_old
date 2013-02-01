@@ -12,6 +12,7 @@ using namespace axon;
 extern ClientMgr *g_client_mgr;
 extern EvPoller *g_main_poller;
 
+
 class NodeConf 
 {
 public:

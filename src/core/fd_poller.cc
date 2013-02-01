@@ -1,59 +1,65 @@
 
 #include "ax_debug.h"
 #include "fd_poller.h"
+#include "common_def.h"
 
 namespace axon {
 
 FdPollerBase::FdPollerBase(uint32_t maxn, int timetick) : timetick_(timetick_)
 {
-	fdmap_ = new HashMapInt(maxn);
 	timer_ = new EvTimer(timetick_);
+	pending_new_ = new HashMapInt(10);
+	retired_ = new int[maxn];   
+	memset(retired_, 0, sizeof(int)*maxn);
+	retired_sz_ = 0;
+
+	entry_ = new PollerEntry[maxn];
+	RT_ASSERT(entry_ != NULL);
 	max_fds_ = maxn;
 	tm_last_ = 0;
+
+	for(int i=0; i<(int)maxn; i++) {
+		reset_fd(i);
+	}
 }
 
 FdPollerBase::~FdPollerBase()
 {
-	delete fdmap_;
+	delete[] entry_;
+	delete timer_;
+	delete pending_new_;
+	delete retired_;
 }
 
-FdPollerBase::PollerEntry* FdPollerBase::find_entry(int fd, uint32_t h)
+void FdPollerBase::reset_fd(int fd)
 {
-	HashEntryInt *phash;
+	PollerEntry* p;
+	if (fd < 0 || fd >= (int)max_fds_) return;
+	p = &entry_[fd];
+	p->ev_mask = EV_NULL;
+	p->status = FDS_EMPTY;
+}
+
+
+//init a new fd
+int FdPollerBase::add_fd(int fd, IFdEventReactor *reactor)
+{
 	PollerEntry *pe;
-
-	phash = fdmap_->find(fd);
-	if (phash == NULL) return NULL;
-	pe = static_cast<PollerEntry*>(phash->data);
-	if (pe->handle != h) return NULL;  //handle not equal
-	return pe;
-}
-
-//return handle
-ev_handle_t FdPollerBase::add_fd(int fd, IFdEventReactor *reactor)
-{
-	PollerEntry *entry;
-	HashEntryInt *phash;
-
-	phash = fdmap_->find(fd);
-	if (phash != NULL) {
-		entry = (PollerEntry*)(phash->data);
-		if (entry != NULL && !(entry->ev_mask & EV_INVALID)) {
-			//warning. replace original poller entry
-			//Maybe there're some bugs in caller's code, or call add_fd several times
-			del_event(fd, entry->handle, entry->ev_mask);
-			DBG_WATCHV("add_fd several times. fd=%d, handle=%d", fd, entry->handle);
-		}	
-	} else {
-		entry = new PollerEntry;
+	if (fd < 0 || fd >= (int)max_fds_) return AX_RET_ERROR;	
+	pe = &entry_[fd];
+	if (pe->status != FDS_EMPTY) {
+		//somewhere call close(fd) instead of FdPollerBase::close_fd(),
+		//some dirty data here, push it in pending_new_ and add_fd later.
+		pending_new_->insert(fd, (void*)reactor);
+		return AX_RET_AGAIN;
 	}
 
-	entry->handle = ++handle_;
-	entry->fd = fd;
-	entry->reactor = reactor;
-	entry->ev_mask = 0;
-	fdmap_->insert(fd, (void*)entry);	
-	return entry->handle;
+	pe->reactor = reactor;
+	pe->ev_mask = EV_NULL;
+	pe->status = FDS_ACTIVE;
+	//auto add ev_read by default
+	add_event(fd, EV_READ);
+	return AX_RET_OK;
 }
 
 void FdPollerBase::set_timetick(int tm)
@@ -61,31 +67,39 @@ void FdPollerBase::set_timetick(int tm)
 	if (tm > 0) timetick_ = tm;
 }
 
-int FdPollerBase::rm_fd(int fd)
+//set wait close state. the manager will close this fd later
+//when fd is used as part of a key known by other process/thread, the fd should not 
+//close immediately before notify all partner, in order to avoid be reuse by OS.
+int FdPollerBase::wait_close(int fd)
 {
-	HashEntryInt *phash;
 	PollerEntry *pe;
+	if (fd < 0 || fd >= (int)max_fds_) return AX_RET_ERROR;
+	pe = &entry_[fd];
+	if (pe->status != FDS_ACTIVE) return AX_RET_ERROR;
+	del_event(fd, EV_READ|EV_WRITE);
+	pe->status = FDS_WAIT_CLOSE;
+	pe->reactor = NULL;
+	return AX_RET_OK;
+}
 
-	phash = fdmap_->find(fd);
-	if (NULL == phash) return -1;
-	pe = (PollerEntry*)(phash->data);
-	//set this fd to invalid. 
-	//won't remove it  
-	pe->ev_mask |= EV_INVALID;
+//add to retired fd. close it current loop completed
+int FdPollerBase::close_fd(int fd)
+{
+	retired_[retired_sz_] = fd;
+	++retired_sz_ ;
 	return 0;
 }
 
-int FdPollerBase::set_reactor(int fd, uint32_t h, IFdEventReactor *reactor)
+//change reactor
+int FdPollerBase::set_reactor(int fd, IFdEventReactor *reactor)
 {
-	PollerEntry *pe;
-	int mask;	
-	pe = find_entry(fd, h);
-	if (NULL == pe) return -1;
-	mask = pe->ev_mask;
-	del_event(fd, h, mask);
-	pe->reactor = reactor;
-	add_event(fd, h, mask);
-	return 0;
+	if (fd < 0 || fd >= (int)max_fds_) return AX_RET_ERROR;
+	if (entry_[fd].status != FDS_ACTIVE) {
+		return AX_RET_ERROR;
+	}
+
+	entry_[fd].reactor = reactor;
+	return AX_RET_OK;
 }
 
 //return time pass from last call. (unit: ms)
@@ -102,11 +116,38 @@ uint32_t FdPollerBase::get_timepass()
 	return pass;
 }
 
+//do one poll. usually in a loop
 int FdPollerBase::process()
 {
+	int i, fd;
+	HashEntryInt *p;
 	RT_ASSERT(timer_ != NULL);
 	timer_->timer_routine();
-	do_poll(timetick_);
+	//all logic implement in do_poll()
+	do_poll();
+
+	//close retired fd
+	for(i=0; i<retired_sz_; i++) {
+		fd = retired_[i];
+		del_event(fd, EV_READ|EV_WRITE);
+		reset_fd(fd);
+		if (entry_[fd].status != FDS_EMPTY) {
+			::close(fd);
+		}
+	}
+	retired_sz_ = 0;
+
+	//handle conflict
+	p = pending_new_->head();
+	while (p != NULL) {
+		fd = p->get_key();
+		entry_[fd].reactor = (IFdEventReactor*)(p->data);
+		entry_[fd].status = FDS_ACTIVE;
+		entry_[fd].ev_mask = EV_NULL;
+		add_event(fd, EV_READ);	
+		p = p->get_link_next();
+	}
+	
 	return 0;
 }
 

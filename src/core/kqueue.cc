@@ -4,6 +4,7 @@
 
 #include "kqueue.h"
 #include <sys/event.h>
+#include "common_def.h"
 
 namespace axon {
 
@@ -18,70 +19,71 @@ KqueuePoller::~KqueuePoller()
 	free(event_list_);
 }
 
-int KqueuePoller::add_event(int fd, uint32_t h, int flag)
+int KqueuePoller::add_event(int fd, int flag)
 {
 	struct kevent ev;
-	PollerEntry *pe = find_entry(fd, h);
-	if (pe == NULL) return -1;
+	PollerEntry *pe;
+	if (fd < 0 || fd > (int)max_fds_) return AX_RET_ERROR;
+    pe = &entry_[fd];
 
 	if (flag & EV_READ) {
-		EV_SET(&ev, fd, EVFILT_READ, EV_ADD, 0, 0, (void*)pe);
+		EV_SET(&ev, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 		kevent(kqueue_fd_, &ev, 1, NULL, 0, NULL);
 		pe->ev_mask |= EV_READ;
 	}
 	if (flag & EV_WRITE) {
-		EV_SET(&ev, fd, EVFILT_WRITE, EV_ADD, 0, 0, (void*)pe);
+		EV_SET(&ev, fd, EVFILT_WRITE, EV_ADD, 0, 0, NULL);
 		kevent(kqueue_fd_, &ev, 1, NULL, 0, NULL);
 		pe->ev_mask |= EV_WRITE;
 	}
-	return 0;
+	return AX_RET_OK;
 }
 
-int KqueuePoller::del_event(int fd, uint32_t h, int flag)
+int KqueuePoller::del_event(int fd, int flag)
 {
 	PollerEntry *pe;
 	struct kevent ev;
-	pe = find_entry(fd, h);
-	if (NULL == pe) return -1;
+	if (fd < 0 || fd > (int)max_fds_) return AX_RET_ERROR;
+	pe = &entry_[fd];
+
 	if (flag & EV_READ) {
-		EV_SET(&ev, fd, EVFILT_READ, EV_DELETE, 0, 0, (void*)pe);
+		EV_SET(&ev, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 		kevent(kqueue_fd_, &ev, 1, NULL, 0, NULL);
 		pe->ev_mask &= ~EV_READ;
 	}
 	if (flag & EV_WRITE) {
-		EV_SET(&ev, fd, EVFILT_WRITE, EV_DELETE, 0, 0, (void*)pe);
+		EV_SET(&ev, fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 		kevent(kqueue_fd_, &ev, 1, NULL, 0, NULL);
 		pe->ev_mask &= ~EV_WRITE;
 	}
 	return 0;
 }
 
-int KqueuePoller::do_poll(int timeout)
+//return: event count
+//		  -1 error occur
+int KqueuePoller::do_poll()
 {
 	int events;
 	int fd;
 	struct timespec ts;
 	struct timespec *tp = NULL;
 	struct kevent *kev;
-	PollerEntry *pe, *pmapfd;
+	PollerEntry *pe;
 
-	if (timeout > 0) {
-		ts.tv_sec = timeout / 1000;
-		ts.tv_nsec = (timeout % 1000) * 1000000;
-		tp = &ts;
-	}
+	ts.tv_sec = timetick_ / 1000;
+	ts.tv_nsec = (timetick_ % 1000) * 1000000;
+	tp = &ts;
+
 	events = kevent(kqueue_fd_, 0, 0, event_list_, max_fds_, tp);
 
-	if (events < 0) return -1;
+	if (events < 0) return AX_RET_ERROR;
 	for (int i=0; i<events; i++) {
 		kev = &event_list_[i];
 		fd = kev->ident;
-		pe = (PollerEntry*)kev->udata;
-		pmapfd = (PollerEntry*)fdmap_->get_data(fd);
-		if (pmapfd == NULL) continue;
-		if (pmapfd->handle != pe->handle) continue;
-		if (pmapfd->ev_mask & EV_INVALID) {
-			del_event(fd, pe->handle, EV_READ | EV_WRITE);
+		pe = &entry_[fd];
+		if (pe->status != FDS_ACTIVE) {
+			//will be close later
+			del_event(fd, EV_READ | EV_WRITE);
 			continue;
 		}
 		if (kev->filter == EVFILT_READ) {

@@ -14,8 +14,8 @@ namespace axon {
 struct buf_chunk_t {
 	buf_chunk_t(int n);
 	~buf_chunk_t(); 
-	
-	int capacity;
+
+	uint32_t capacity;
 	int nelems;
 	//valid data segment
 	void* data;
@@ -39,7 +39,7 @@ public:
 
 protected:
 	//upper limit of each chunk
-	static const int capacity_limit = 4000000;
+	static const uint32_t capacity_limit = 4000000;
 	
 	//disable copy construction
 	queue_t (const queue_t&);

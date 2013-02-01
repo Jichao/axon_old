@@ -26,10 +26,16 @@ enum EvFlag {
 	EV_NULL = 0,
 	EV_READ = 1,
 	EV_WRITE = 2,
-	EV_INVALID = 4,
 };
 
-typedef uint32_t ev_handle_t;
+//fd entry status
+enum FdStatus {
+	FDS_EMPTY = 0,
+	FDS_ACTIVE = 1,    //active fd
+	FDS_WAIT_CLOSE = 2,  //peer close, waiting connect manager to close fd later
+	                     // == tcp CLOSE_WAIT state
+	FDS_RETIRED = 3, 	//ready to close
+};
 
 //reactor class should derived from this interface 
 class IFdEventReactor
@@ -47,9 +53,8 @@ class FdPollerBase
 public:
 	struct PollerEntry
 	{
-		int fd;
-		uint32_t handle;
-		int ev_mask;
+		uint8_t ev_mask;
+		uint8_t status;  //FD status
 		IFdEventReactor *reactor;
 	};
 
@@ -57,25 +62,44 @@ public:
 	FdPollerBase(uint32_t max_fds, int timetick);
 	~FdPollerBase();
 
-	ev_handle_t add_fd(int fd, IFdEventReactor *reactor);
-	int rm_fd(int fd);
-	int set_reactor(int fd, uint32_t h, IFdEventReactor *reactor);
+	int add_fd(int fd, IFdEventReactor *reactor);
+	//del event poll of this fd, but close later
+	int wait_close(int fd);
+	int close_fd(int fd);
+
+	//timetick for timer and polling timeout
 	void set_timetick(int tm);
-	PollerEntry* find_entry(int fd, uint32_t h);
 	int process();
 
-	virtual int add_event(int fd, uint32_t h, int flag) = 0;
-	virtual int del_event(int fd, uint32_t h, int flag) = 0;
-	virtual int do_poll(int timeout) = 0;
+	//change reactor
+	int set_reactor(int fd, IFdEventReactor *reactor);
+
+	virtual int add_event(int fd, int flag) = 0;
+	virtual int del_event(int fd, int flag) = 0;
+	virtual int do_poll() = 0;
+
 	int add_timer_event(ev_timer_proc cbfunc, void* data, uint32_t timeout);
 	int del_timer_event(int handle);
 	uint32_t get_timepass();
 
 protected:
-	HashMapInt *fdmap_;
+	void reset_fd(int fd);
+
+protected:
+	//prealloc entry PollEntry
+	PollerEntry *entry_;
+
+	//for safety, pendingnew_/retired_ is a list to init/close fd entry after
+	//event_poll iteration finished
+	//there's a rare chance to occur a reuse fd conflict in a event_poll iteration
+	//e.g.: close() then a new connect reuse this fd. so add to pending_new_ first
+	HashMapInt *pending_new_; 
+	int *retired_;  
+	int retired_sz_;
+
 	EvTimer *timer_;
+
 	int timetick_;  //unit:ms. timetick for each poll(1000ms/server frame rate)
-	ev_handle_t handle_;  //event handle
 	uint32_t max_fds_;   //max number of fd
 	uint64_t tm_last_;   //last process
 };

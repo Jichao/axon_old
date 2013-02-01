@@ -27,7 +27,7 @@ public:
 	int get_fd1() { return pinfo_[1].fd_; }  //b for worker thread
 
 	//write to tpipe
-	int write(int side, int payload_len, int type, char* payload);
+	int write(int side, size_t payload_len, int type, char* payload);
 
 	//callback of fd event	
 	virtual void on_ev_read(int fd);
@@ -40,7 +40,6 @@ private:
 		buffer_t *wbuf_;
 		buffer_t *rbuf_;
 		pipe_cbfunc cb_read_;
-		ev_handle_t ev_h_;
 		EvPoller *poller_;
 		void* cbobj_;
 	} tpipe_fd_info_t;

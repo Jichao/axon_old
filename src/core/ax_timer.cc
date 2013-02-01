@@ -203,9 +203,10 @@ void _T_timer_cb(int handle, void* data)
 UTEST(EvTimer)
 {
 	EvTimer timer(100); //100 ms per tick
-	int h1 = timer.add_timer(_T_timer_cb, &timer, 1000);
 	int h2 = timer.add_timer(_T_timer_cb, &timer, 1024 * 100 * 10);
 	int h3 = timer.add_timer(_T_timer_cb, &timer, 1024 * 1024 * 10);
+
+	timer.add_timer(_T_timer_cb, &timer, 1000);
 	timer.del_timer(h2);
 	timer.del_timer(h3);
 	timer.add_timer(_T_timer_cb, &timer, 10);

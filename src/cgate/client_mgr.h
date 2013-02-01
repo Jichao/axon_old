@@ -19,6 +19,7 @@ public:
 	int start_worker();  //start worker's thread
 
 	int listen();
+	int notify_workers(cw_msg_t* msg);
 	int process();
 
 	EvPoller* get_poller();
@@ -27,7 +28,7 @@ public:
 	static void on_mailbox_read(void* pobj, var_msg_t *data);
 
 private:
-	int on_accept_new_connect(int sockfd, string_t ip, uint16_t port);
+	int on_accept_new_connect(int sockfd, uint32_t ip, uint16_t port);
 
 private:
 	//be careful: some var shared between main thread and worker thread 
@@ -35,14 +36,14 @@ private:
 		AxThread thr;     //worker's thread
 		int active_conn;  //active connection
 		int max_conn;     //connection capacity
-		int status;
+		uint8_t status;
 		tpipe_t mailbox;  //queue between main thread and worker
 		worker_init_t info;  //init info
 	}thread_worker_t;
 
 	int worker_num_;
 	int inited_;  //initilized flag
-	int hid_;   //alloc hid to a new connection
+	uint32_t hid_;   //alloc hid to a new connection
 	thread_worker_t *workers_;	
 
 	ConnectWorker *__worker_;   //connection routine worker 

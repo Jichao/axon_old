@@ -68,7 +68,7 @@ int queue_t::push(int n, int type, void* vdata)
 	var_msg_t *pheader;
 	buf_chunk_t *avail_chunk;
 	char *cp;
-	int total_len;
+	uint32_t total_len;
 	int actual_n = n;
 	RT_ASSERT(n > 0);
     total_len = actual_n + VAR_MSG_HLEN;

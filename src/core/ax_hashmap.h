@@ -30,7 +30,7 @@
 //  xx.insert(10, 10);
 //  xx.insert(20, 20);
 //  xx.insert(30, 30);
-//  HashEntryInt p = xx.find(20);
+//  HashEntryInt *p = xx.find(20);
 //  if (p != NULL) {
 //     //move to head
 //     xx.detach_link(p);
