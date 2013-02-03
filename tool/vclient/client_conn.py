@@ -29,6 +29,8 @@ class CConn(object):
 
 	def __init__(self):
 		self.sockfd = 0
+		self.port = 0
+		self.ip = 0
 		self.step = 0  #state transfer
 		self.fd_state = 0
 		self.tm_last_send = 0
@@ -48,6 +50,8 @@ class CConn(object):
 			self.__try_send()
 	
 	def connect(self, ip, port):
+		self.ip = ip
+		self.port = port
 		self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.sockfd.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 		self.sockfd.setblocking(0)
@@ -65,10 +69,12 @@ class CConn(object):
 		if self.fd_state == FDS_ACTIVE: return 1
 		if self.fd_state != FDS_CONNECTING: return -1
 		try:
-			self.sockfd.recv(0)
+			peer = self.sockfd.getpeername()
 		except socket.error,(code, strerr):
 			print strerr
-			if code in ERRNO_AGAIN: return 0
+			if code in ERRNO_AGAIN: 
+				#self.connect((self.ip, self.port))
+				return 0
 			if code in (errno.EISCONN, 10057, 10053): return 0
 			sys.stderr.write('[CONNECT] connect fail')			
 			return -1
@@ -76,7 +82,6 @@ class CConn(object):
 		#connect OK
 		self.rbuf = ''
 		self.fd_state = FDS_ACTIVE
-		print 'connected'
 		return 1
 
 	def __try_recv(self):
@@ -105,7 +110,6 @@ class CConn(object):
 
 	def __try_send(self):
 		wsize = 0
-		print self.wbuf
 		if self.fd_state != FDS_ACTIVE: return -1
 		if len(self.wbuf) == 0: return 0
 		try:

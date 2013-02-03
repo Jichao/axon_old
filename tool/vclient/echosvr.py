@@ -44,7 +44,7 @@ class nethost(object):
 	def on_msg_arrive(self, pos, msg):
 		c = self.clients[pos]
 		if not c: return
-		print msg
+		#echo back
 		try:
 			c.send(msg)
 		except:
