@@ -4,6 +4,9 @@
 #include "connect_worker.h"
 #include "node_init.h"
 
+using namespace axon;
+using namespace xpb;
+
 ConnectWorker::ConnectWorker(uint32_t max_connect, uint32_t rsize, uint32_t wsize)
 {
 	poller_ = new EvPoller(max_connect, NodeConf::timetick);
@@ -12,6 +15,7 @@ ConnectWorker::ConnectWorker(uint32_t max_connect, uint32_t rsize, uint32_t wsiz
 	max_connect_ = max_connect;
 	container_ = new ConnectContainer(max_connect, this, rsize, wsize);
 	mailbox_ = NULL;
+	state_ = S_INVALID;
 }
 
 ConnectWorker::~ConnectWorker()
@@ -27,11 +31,9 @@ void ConnectWorker::thread_worker_fn(void * arg)
 	ConnectWorker *pworker = new ConnectWorker(pinit->max_conn, NodeConf::client_rbuf_size, 256);
 	pworker->mailbox_ = pinit->mailbox;
 	pworker->mailbox_->init(1, pworker->poller_, on_mailbox_read, pworker);
-	//loop
-	while(1) {
-		pworker->poller_->process();
-	}
+	pworker->start_loop();
 }
+
 
 Connect* ConnectWorker::get_connect(int vfd, int hid)
 {
@@ -66,7 +68,7 @@ void ConnectWorker::close_connect(int vfd, int hid)
 }
 
 //new connection
-Connect* ConnectWorker::new_connect(int fd, int hid, uint32_t peer_ip, uint16_t peer_port)
+Connect* ConnectWorker::new_connect(int fd, int hid, unsigned long peer_ip, uint16_t peer_port)
 {
 	int vfd = container_->alloc_connect(fd);
 	int ret;
@@ -88,7 +90,7 @@ Connect* ConnectWorker::new_connect(int fd, int hid, uint32_t peer_ip, uint16_t 
 	return conn;
 }
 
-//data in
+//client data in
 void ConnectWorker::on_read(Connect* conn)
 {
 	int ret;
@@ -105,7 +107,7 @@ void ConnectWorker::on_read(Connect* conn)
 	process_data(conn);
 }
 
-//data out
+//client data out
 void ConnectWorker::on_write(Connect* conn)
 {
 
@@ -118,17 +120,88 @@ void ConnectWorker::decrypt_client_data(Connect* conn)
 
 }
 
-void ConnectWorker::process_data(Connect* conn)
+int ConnectWorker::process_data(Connect* conn)
 {
 
 	decrypt_client_data(conn);
-
+	return 0;
 }
 
 
 //message from main thread
-void ConnectWorker::on_mailbox_read(void* pobj, var_msg_t* data)
+int ConnectWorker::on_mailbox_read(void* pobj, proto_msg_t* pb, int remain)
 {
+	int ret;
+	int shift = 0;
+	pb_wrapper *wrapper = (pb_wrapper*)pb;
+	char* data = wrapper->pl.data;
+	ConnectWorker *pmgr = (ConnectWorker*)pobj;
+	pb_cgate_ctrl msg_ct;
+	pb_client_unicast msg_cli; 
 
+	switch(wrapper->pl.proto) 
+	{
+	case PT_CGATE_CTRL:
+		ret = msg_ct.unpack(data, remain);
+		if (ret < 0) return -1;
+		shift += ret;
+		ret = pmgr->process_worker_command(&msg_ct, remain - ret);
+		if (ret < 0) return -1;
+		shift += ret;
+		break;
+	case PT_CLIENT_UNICAST:
+		ret = msg_cli.unpack(data, remain); 
+		if (ret < 0) return -1; 
+		shift += ret;
+		break;
+	default:
+		return -1;
+	}
+	return shift;
+}
+
+//process command from main thread
+int ConnectWorker::process_worker_command(pb_cgate_ctrl *wrapper, int remain)
+{
+	int ret = 0;
+	int shift = 0;
+	pb_cgate_newconn conn;
+	pb_worker_ctrl msg;
+
+	switch(wrapper->pl.proto) 
+	{
+	case PT_CGATE_NEWCONN:
+		ret = conn.unpack(wrapper->pl.data, remain);
+		if (ret < 0) return -1;
+		shift += ret;
+		new_connect(conn.fd, conn.hid, conn.ip, conn.port);
+		break;
+	case PT_WORKER_CTRL:
+		ret = msg.unpack(wrapper->pl.data, remain);
+		shift += ret;
+		break;
+	default:
+		ret = 0;
+		break;
+	}
+	return shift;
 
 }
+
+//send control command to main thread
+void ConnectWorker::send_worker_command(proto_msg_t *msg)
+{
+
+}
+
+void ConnectWorker::start_loop()
+{
+	//notify main thread ready
+	state_ = S_ACTIVE;
+
+	while(state_ != ConnectWorker::S_TO_CLOSE) {
+		break;
+		//pworker->poller_->process();
+	}
+}
+

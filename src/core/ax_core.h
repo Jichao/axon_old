@@ -14,4 +14,4 @@
 #include "ax_thread.h"
 #include "ax_queue.h"
 #include "ax_tpipe.h"
-
+#include "ax_proto_msg.h"

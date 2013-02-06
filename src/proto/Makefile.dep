@@ -1,0 +1,5 @@
+PROTO_DEPS_LOCAL = node_msg_pb.h cgate_msg_pb.h 
+PROTO_OBJS_LOCAL = node_msg_pb.o cgate_msg_pb.o 
+
+PROTO_OBJS = $(addprefix proto/, $(PROTO_OBJS_LOCAL))
+PROTO_DEPS = $(addprefix src/proto/, $(PROTO_DEPS_LOCAL))

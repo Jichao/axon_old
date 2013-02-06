@@ -123,11 +123,12 @@ int buffer_t::prepare(uint32_t size)
 {
 	uint32_t need;
 	char *newp;
-	need = len_ + size;
 	//shift first
 	if (end_ + size > alloc_size_) shift();
+	need = end_ + size;
 	if (need > alloc_size_ ) {
-		alloc_size_ = start_ + need;
+		if (need - alloc_size_ < 128) need = alloc_size_ + 128;
+		alloc_size_ = need;
 		newp = (char*)realloc(buf_, alloc_size_);
 		RT_ASSERT(newp != NULL);
 		buf_ = newp;

@@ -1,0 +1,40 @@
+//============================================
+//proto_msg definition
+//Warning:This file is auto generated. Don't modify it by hand
+//============================================
+
+#ifndef _{{pkg_name}}_PB_
+#define _{{pkg_name}}_PB_
+
+#include <core/ax_proto_msg.h>
+using namespace axon;
+
+namespace xpb {
+//proto package ID
+const int {{pkg_id_name}} = {{pkg_id}};
+
+//proto id name define
+{% for pname, pc in all_proto.items() %}
+const int {{pc.id_name}} = {{pc.proto_id}};{% endfor %}
+
+
+{% for pname, pc in all_proto.items() %}
+class pb_{{pname}} : public proto_msg_t
+{
+public:
+	static const int proto_id = {{pc.proto_id}};
+	pb_{{pname}} () {
+		{{ pc.init_field }}
+	}
+	virtual int cal_size();
+	virtual int unpack(char* p, uint32_t avail);
+	virtual int pack(char* p, uint32_t maxn);
+
+	{{ pc.decl_field }}
+};
+
+{% endfor %}
+
+} //namespace xpb
+#endif
+

@@ -60,7 +60,7 @@ public:
 	uint8_t status_;    //connection state machine variable
 	uint8_t ident_;      //connection type or usage
 
-	uint32_t peer_ip_;    //ipv4 ip int
+	unsigned long peer_ip_;    //ipv4 ip int
 	uint16_t peer_port_;   //peer's port
 
 	buffer_t *rbuf_;

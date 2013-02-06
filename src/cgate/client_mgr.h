@@ -3,11 +3,19 @@
 #define _CLIENT_MGR_H_
 
 #include <core/ax_core.h>
+#include <proto/node_msg_pb.h>
+#include <proto/cgate_msg_pb.h>
 #include "client_mgr.h"
 #include "connect_worker.h"
-#include "worker_proto.h"
 
 using namespace axon;
+using namespace xpb;
+
+struct worker_init_t
+{
+	uint32_t max_conn;
+	tpipe_t *mailbox;
+};
 
 class ClientMgr: IListenHandler
 {
@@ -19,16 +27,18 @@ public:
 	int start_worker();  //start worker's thread
 
 	int listen();
-	int notify_workers(cw_msg_t* msg);
+	int notify_workers(proto_msg_t* msg);
 	int process();
 
 	EvPoller* get_poller();
 	void on_peer_close(int fd, int hid);
 	int close_connect(int hid);
-	static void on_mailbox_read(void* pobj, var_msg_t *data);
+	static int on_mailbox_read(void* pobj, proto_msg_t *pb, int remain);
 
 private:
-	int on_accept_new_connect(int sockfd, uint32_t ip, uint16_t port);
+	int send_worker_ctrl(pb_cgate_ctrl * msg);
+	int on_accept_new_connect(int sockfd, uint64_t ip, uint16_t port);
+	int process_worker_command(pb_cgate_ctrl *wrapper, int remain);
 
 private:
 	//be careful: some var shared between main thread and worker thread 

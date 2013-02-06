@@ -2,7 +2,6 @@
 #include "node_init.h"
 #include "connect_worker.h"
 #include "client_mgr.h"
-#include "worker_proto.h"
 #include "node_def.h"
 
 using namespace axon;
@@ -48,11 +47,10 @@ void ClientMgr::init(uint16_t client_port, uint16_t backlog, int worker_num)
 }
 
 //broadcast message to worker threads
-int ClientMgr::notify_workers(cw_msg_t* msg)
+int ClientMgr::notify_workers(proto_msg_t* msg)
 {
 	for(int i=0; i<worker_num_; i++) {
 		if (workers_[i].status < 1) continue;
-		workers_[i].mailbox.write(0, sizeof(cw_msg_t), CW_CMD, (char*)msg); 
 	}
 	return 0;
 }
@@ -82,9 +80,36 @@ int ClientMgr::start_worker()
 }
 
 //static callback function
-void ClientMgr::on_mailbox_read(void *pobj, var_msg_t *data)
+int ClientMgr::on_mailbox_read(void *pobj, proto_msg_t *pb, int remain)
 {
-	ClientMgr *mgr = (ClientMgr*)pobj;
+	int shift = 0;
+	int ret;
+	pb_wrapper* wrapper = (pb_wrapper*)pb;
+	char* data = wrapper->pl.data;
+	ClientMgr *pmgr = (ClientMgr*)pobj;
+	pb_cgate_ctrl msg_ct;
+	pb_client_req msg_cli_recv;
+
+	switch(wrapper->pl.proto)
+	{
+	case PT_CGATE_CTRL:
+		ret = msg_ct.unpack(data, remain);
+		if (ret < 0) return -1;
+		shift += ret;
+		ret = pmgr->process_worker_command(&msg_ct, remain - ret);
+		if (ret < 0) return -1;
+		shift += ret;
+		break;
+	
+	case PT_CLIENT_REQ:
+		ret = msg_cli_recv.unpack(data, remain);
+		if (ret < 0) return -1;
+		shift += ret;
+		break;
+	default: 
+		return -1;
+	}
+	return shift;
 }
 
 int ClientMgr::listen()
@@ -135,26 +160,25 @@ void ClientMgr::on_listen_read(Listener *ls)
 
 		}
 		client_port = ntohs(client_addr.sin_port);
-		on_accept_new_connect(client_fd, htonl(client_addr.sin_addr.s_addr), client_port);	
+		on_accept_new_connect(client_fd, (uint64_t)htonl(client_addr.sin_addr.s_addr), client_port);	
 		++accept_once;
 	}
 }
 
 //accept new socket and dispatch to a worker
-int ClientMgr::on_accept_new_connect(int sockfd, uint32_t ip, uint16_t port)
+int ClientMgr::on_accept_new_connect(int sockfd, uint64_t ip, uint16_t port)
 {
 	int load, select = 0;
 	tpipe_t *mailbox;
-	newconn_msg_t msg;
+	pb_cgate_newconn msg;
 	//accept
 	RT_ASSERT(inited_ != 0);
 	
 	//set nonblocking here
 	ax_set_nonblock(sockfd);
 	++hid_;
-	if (hid_ >= ~(HID_THR_MASK <<HID_THR_BITS) ) {
-		hid_ = 1;
-	}
+	hid_ &= ~(HID_THR_MASK <<HID_THR_BITS);
+
 	load = workers_[0].active_conn;
 	//find least burden worker
 	for(int i=1; i<worker_num_; i++) {
@@ -165,12 +189,17 @@ int ClientMgr::on_accept_new_connect(int sockfd, uint32_t ip, uint16_t port)
 	}
 
 	mailbox = &(workers_[select].mailbox);
+
 	msg.fd = sockfd;
 	msg.hid = (select << HID_THR_BITS) | hid_;
 	msg.ip = ip;
 	msg.port = port;
 
-	mailbox->write(0, sizeof(msg), CW_NEWCONN, (char*)&msg);
+	pb_wrapper pkt_wrap;
+	pkt_wrap.pl.proto = PT_CGATE_NEWCONN;
+	pkt_wrap.pl.data = (char*)&msg;
+
+	mailbox->write(0, &pkt_wrap);
 
 	return AX_RET_OK;
 }
@@ -193,4 +222,19 @@ int ClientMgr::close_connect(int hid)
 	int vfd;
 	vfd = (hid >> HID_THR_BITS) & HID_THR_MASK;
 	return AX_RET_OK;
+}
+
+int ClientMgr::process_worker_command(pb_cgate_ctrl *wrapper, int remain)
+{
+	int shift = 0;
+	switch (wrapper->pl.proto)
+	{
+	case PT_WORKER_NOTIFY:
+		break;
+	default:
+		break;
+
+	}	
+
+	return shift;
 }

@@ -1,0 +1,5 @@
+PROTO_DEPS_LOCAL = {{ deps }}
+PROTO_OBJS_LOCAL = {{ objs }}
+
+PROTO_OBJS = $(addprefix proto/, $(PROTO_OBJS_LOCAL))
+PROTO_DEPS = $(addprefix src/proto/, $(PROTO_DEPS_LOCAL))

@@ -9,13 +9,14 @@
 #include "ax_queue.h"
 #include "ax_buffer.h"
 #include "fd_poller.h"
+#include "ax_proto_msg.h"
 
 namespace axon {
 
 //callback function.
 //don't reference pointer of "data" outside the callback function.
 //it will be invalid later. copy them if needed.
-typedef void (*pipe_cbfunc) (void* pobj, var_msg_t* data);
+typedef int (*pipe_cbfunc) (void* pobj, proto_msg_t *wrapper, int remain);
 
 class tpipe_t : IFdEventReactor
 {
@@ -27,9 +28,9 @@ public:
 	int get_fd1() { return pinfo_[1].fd_; }  //b for worker thread
 
 	//write to tpipe
-	int write(int side, size_t payload_len, int type, char* payload);
+	int write(int side, proto_msg_t* pkt);
 
-	//callback of fd event	
+	void try_write(int side);
 	virtual void on_ev_read(int fd);
 	virtual void on_ev_write(int fd);
 
@@ -42,6 +43,10 @@ private:
 		pipe_cbfunc cb_read_;
 		EvPoller *poller_;
 		void* cbobj_;
+		//split to seperate cache-line, 
+		//to avoid cache-line shared by different threads
+		//assume the CPU is x86-64. cache-line is 64 byte
+		char _dummy[64];  
 	} tpipe_fd_info_t;
 
 	//disable copy constructor
