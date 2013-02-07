@@ -28,6 +28,7 @@ CORE_LIB = libax_core.a
 #==link target==============================
 
 include Makefile.dep
+include src/proto/Makefile.dep
 
 all: core engine test
 	@echo "done!"
@@ -41,10 +42,10 @@ engine: cgate
 	@echo "make engine done!!"
 
 cgate: core $(CGATE_OBJS)
-	$(CC) -g3 -pthread -o $(BIN_DIR)/cgate $(addprefix $(OBJ_DIR)/, $(CGATE_OBJS)) $(OBJ_DIR)/$(CORE_LIB) $(EXTRA_LIB) 
+	$(CC) -g3 -pthread -o $(BIN_DIR)/cgate $(addprefix $(OBJ_DIR)/, $(CGATE_OBJS)) $(OBJ_DIR)/$(CORE_LIB) $(EXTRA_LIB)
 
-core: environ $(CORE_OBJS)
-	$(AR) -r $(OBJ_DIR)/$(CORE_LIB) $(addprefix $(OBJ_DIR)/, $(CORE_OBJS))
+core: environ $(CORE_OBJS) $(PROTO_OBJS)
+	$(AR) -r $(OBJ_DIR)/$(CORE_LIB) $(addprefix $(OBJ_DIR)/, $(CORE_OBJS)) $(addprefix $(OBJ_DIR)/, $(PROTO_OBJS))
 
 .PHONY: test
 
@@ -56,6 +57,7 @@ environ:
 	-mkdir -p $(OBJ_DIR)/test
 	-mkdir -p $(OBJ_DIR)/cgate
 	-mkdir -p $(OBJ_DIR)/master
+	-mkdir -p $(OBJ_DIR)/proto
 	-mkdir -p $(BIN_DIR)
 
 
@@ -66,3 +68,7 @@ core/%.o : src/core/%.cc $(CORE_DEPS)
 
 cgate/%.o : src/cgate/%.cc $(CGATE_DEPS)
 	$(CC) $(INCLUDES) $(OPTIMIZE) $(OS_SPECIAL) -o $(OBJ_DIR)/$@ -c $<
+
+proto/%.o : src/proto/%.cc $(PROTO_DEPS)
+	$(CC) $(INCLUDES) $(OPTIMIZE) $(OS_SPECIAL) -o $(OBJ_DIR)/$@ -c $<
+

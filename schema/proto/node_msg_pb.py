@@ -10,44 +10,32 @@ OUTPUT_SCRIPT = 0
 #====PROTO_DEF=======================
 PROTO_DEF = {
 
-#the bottom level of engine message
-"wrapper" : {
-	"dir": N2N, 
-	"proto_id": 0, 
-	"desc": 'bottom engine',
-	"func": '', 
-	"body": [
-		("pl", PAYLOAD), 
-	]
-},
-
 "cgate_ctrl" : {
-	"dir": G2G,
-	"proto_id": 2, 
-	"desc": "new connection",
+	"proto_id": 1, 
+	"desc": "cgate ctrl",
 	"func": "",
 	"body": [
-		("pl", PAYLOAD),
+		("cmd", INT16),
 	]
 },
 
 "client_req" : {
-	"dir": N2N,
-	"proto_id": 3,
+	"proto_id": 2,
 	"desc": "client packet wrapper",
 	"body": [
 		("hid", INT32),
-		("pl", PAYLOAD),
+		("main_proto", INT16),
+		("sub_proto", INT16),
 	]
 },
 
 "client_unicast" : {
-	"dir": N2N,
-	"proto_id": 4,
+	"proto_id": 3,
 	"desc": "wrapper of unicast data",
 	"body": [
 		("hid", INT32),
-		("pl", PAYLOAD),
+		("main_proto", INT16),
+		("sub_proto", INT16),
 	]
 }
 

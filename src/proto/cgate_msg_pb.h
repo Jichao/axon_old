@@ -11,14 +11,13 @@ using namespace axon;
 
 namespace xpb {
 //proto package ID
-const int PKG_CGATE_MSG = 2;
+const int PKG_CGATE_MSG = 1;
 
 //proto id name define
 
 const int PT_CGATE_NEWCONN = 1;
 const int PT_WORKER_CTRL = 2;
 const int PT_WORKER_NOTIFY = 2;
-
 
 
 class pb_cgate_newconn : public proto_msg_t

@@ -68,7 +68,7 @@ void ConnectWorker::close_connect(int vfd, int hid)
 }
 
 //new connection
-Connect* ConnectWorker::new_connect(int fd, int hid, unsigned long peer_ip, uint16_t peer_port)
+Connect* ConnectWorker::new_connect(int fd, int hid, uint64_t peer_ip, uint16_t peer_port)
 {
 	int vfd = container_->alloc_connect(fd);
 	int ret;
@@ -129,63 +129,29 @@ int ConnectWorker::process_data(Connect* conn)
 
 
 //message from main thread
-int ConnectWorker::on_mailbox_read(void* pobj, proto_msg_t* pb, int remain)
+void ConnectWorker::on_mailbox_read(void* pobj, msg_header_t header, char* p)
 {
 	int ret;
-	int shift = 0;
-	pb_wrapper *wrapper = (pb_wrapper*)pb;
-	char* data = wrapper->pl.data;
+	int remain;
+	int wrapper_type;
 	ConnectWorker *pmgr = (ConnectWorker*)pobj;
-	pb_cgate_ctrl msg_ct;
-	pb_client_unicast msg_cli; 
 
-	switch(wrapper->pl.proto) 
-	{
-	case PT_CGATE_CTRL:
-		ret = msg_ct.unpack(data, remain);
-		if (ret < 0) return -1;
-		shift += ret;
-		ret = pmgr->process_worker_command(&msg_ct, remain - ret);
-		if (ret < 0) return -1;
-		shift += ret;
-		break;
-	case PT_CLIENT_UNICAST:
-		ret = msg_cli.unpack(data, remain); 
-		if (ret < 0) return -1; 
-		shift += ret;
-		break;
-	default:
-		return -1;
+	remain = header.pl_len;
+	wrapper_type = header.proto;
+
+	if (wrapper_type == PT_CGATE_CTRL) {
+		pb_cgate_ctrl ctrl;
+		ret = (&ctrl)->unpack(p, remain);
+		if (ret < 0) return;
+		pmgr->process_worker_command(ctrl.cmd, p + ret, remain - ret);
 	}
-	return shift;
 }
 
 //process command from main thread
-int ConnectWorker::process_worker_command(pb_cgate_ctrl *wrapper, int remain)
+void ConnectWorker::process_worker_command(int proto, char *p, int remain)
 {
 	int ret = 0;
-	int shift = 0;
-	pb_cgate_newconn conn;
-	pb_worker_ctrl msg;
-
-	switch(wrapper->pl.proto) 
-	{
-	case PT_CGATE_NEWCONN:
-		ret = conn.unpack(wrapper->pl.data, remain);
-		if (ret < 0) return -1;
-		shift += ret;
-		new_connect(conn.fd, conn.hid, conn.ip, conn.port);
-		break;
-	case PT_WORKER_CTRL:
-		ret = msg.unpack(wrapper->pl.data, remain);
-		shift += ret;
-		break;
-	default:
-		ret = 0;
-		break;
-	}
-	return shift;
-
+	
 }
 
 //send control command to main thread

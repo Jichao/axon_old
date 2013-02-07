@@ -12,9 +12,7 @@ namespace xpb {
 //don't call it after unpack for proto which has a payload field
 int pb_{{pname}}::cal_size()
 {
-	uint32_t pl_len = 0;
-{{pc.cal_payload_len}}
-	return {{pc.fixed_len}} + pl_len;
+	return {{pc.fixed_len}} {{pc.var_len}};
 }
 
 //return actual shift size
@@ -25,7 +23,7 @@ int pb_{{pname}}::unpack(char* p, uint32_t avail)
 	int _shift = 0;
 	if ( p == NULL || avail < _fl ) return -1;
 {{ pc.unpack }}
-	return _shift;
+	return _shift + _fl;
 }
 
 //return total shift size
@@ -38,7 +36,7 @@ int pb_{{pname}}::pack(char* p, uint32_t avail)
 	char* ptmp;
 	if ( p == NULL || avail < _fl) return -1;
 {{ pc.pack }}
-	return _shift;
+	return _shift + _fl;
 }
 
 {% endfor %}

@@ -1,6 +1,6 @@
 from prot_basedef import *
 
-PKG_ID = 2
+PKG_ID = 1
 
 OUTPUT_ENGINE = 1
 OUTPUT_SCRIPT = 0
@@ -9,7 +9,6 @@ OUTPUT_SCRIPT = 0
 PROTO_DEF = {
 
 "cgate_newconn" : {
-	"dir": G2G,
 	"proto_id": 1, 
 	"desc": "new connection",
 	"func": "",
@@ -22,7 +21,6 @@ PROTO_DEF = {
 },
 
 "worker_ctrl" : {
-	"dir": G2G,
 	"proto_id": 2, 
 	"desc": "new connection",
 	"func": "",
@@ -33,7 +31,6 @@ PROTO_DEF = {
 },
 
 "worker_notify" : {
-	"dir": G2G,
 	"proto_id": 2, 
 	"desc": "new connection",
 	"func": "",

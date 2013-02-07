@@ -24,6 +24,7 @@ def output_engine(pkg_info, proto_def):
 	for pname, v in proto_def.items():
 		gen_cpp.gen_cpp_body(pname, v)	
 
+	gen_cpp.gen_pkg_instance(ctx, proto_def)
 	ctx['all_proto'] = proto_def
 
 	fileloader = jinja2.FileSystemLoader(TEMPLATE_PATH)

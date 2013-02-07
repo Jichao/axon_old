@@ -29,7 +29,7 @@ public:
 	};
 
 	static void thread_worker_fn(void * arg);
-	static int on_mailbox_read(void* pobj, proto_msg_t* pb, int remain);
+	static void on_mailbox_read(void* pobj, msg_header_t header, char *p);
 	void start_loop();
 	int get_state() { return state_; }
 
@@ -49,7 +49,7 @@ private:
 	int process_data(Connect* conn);
 
 	void send_worker_command(proto_msg_t * msg);
-	int process_worker_command(pb_cgate_ctrl* msg, int remain);
+	void process_worker_command(int proto, char* p, int remain);
 
 private:
 	EvPoller *poller_;

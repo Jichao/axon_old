@@ -61,9 +61,10 @@ void tpipe_t::on_ev_read(int fd)
 	int side;
 	int nbytes;
 	int remain;
-	int ret;
 	buffer_t* buf;
-	pb_wrapper wrapper;
+	char* p;
+
+	msg_header_t header;
 	if (fd == pinfo_[0].fd_) {
 		side = 0;
 	} else if (fd == pinfo_[0].fd_) {
@@ -72,6 +73,7 @@ void tpipe_t::on_ev_read(int fd)
 		//error
 		return;
 	}
+
 	buf = pinfo_[side].rbuf_;
 	buf->prepare( MAX_PROTO_LEN );
 	nbytes = ::read(pinfo_[side].fd_, buf->tail(), MAX_PROTO_LEN);
@@ -86,23 +88,20 @@ void tpipe_t::on_ev_read(int fd)
 		buf->pop(nbytes);
 		return;
 	}
-	remain = nbytes;
-	while( (ret = wrapper.unpack(buf->data(), remain)) > 0) {
-		if (wrapper.pl.pl_len > remain) return;  //wait more data
-		buf->pop(ret);
-		ret = pinfo_[side].cb_read_(pinfo_[side].cbobj_, &wrapper, remain - ret);
-		if (ret < 0) {
-			//packet error
-			buf->pop(wrapper.pl.pl_len);	
-			return;
-		}
-		buf->pop(wrapper.pl.pl_len);
-		if (wrapper.pl.pl_len != ret) {
-			//packet error
-			return;
-		}
-		remain -= ret;
+	remain = buf->len();
+	while ( remain > MSG_HEADER_LEN ) {
+		p = buf->data();	
+		UNPACK_HEADER(&header, p);	
+		remain -= MSG_HEADER_LEN;
+		//need more data
+		if (remain < header.pl_len) break; 
+		buf->pop( MSG_HEADER_LEN );
+		pinfo_[side].cb_read_(pinfo_[side].cbobj_, header, buf->data());
+
+		remain -= header.pl_len;
+		buf->pop( header.pl_len );
 	}
+
 }
 
 //try to flush the write buffer
@@ -143,12 +142,17 @@ void tpipe_t::on_ev_write(int fd)
 }
 
 //write
-int tpipe_t::write(int side, proto_msg_t* p)
+int tpipe_t::write(int side, int wrapper_type, proto_msg_t* wrapper, proto_msg_t* pkt)
 {
 	int fd;
 	int ret;
-	int len;
+	int pl_len;
+	int wrapper_len;
 	buffer_t *buf;
+	char *p;
+	int total_len;
+	msg_header_t header;
+
 	RT_ASSERT(side == 0 || side == 1);
 	fd = pinfo_[side].fd_;
 	buf = pinfo_[side].wbuf_;
@@ -156,11 +160,24 @@ int tpipe_t::write(int side, proto_msg_t* p)
 		//not init yet
 		return -1;
 	}
-	len = p->cal_size();
-	buf->prepare( len + 8 );
-	ret = p->pack(buf->tail(), len + 8);
+	pl_len = pkt->cal_size();
+	wrapper_len = wrapper->cal_size();
+	header.pl_len = wrapper->cal_size() + pkt->cal_size(); 
+	header.proto = wrapper_type;
+	total_len = pl_len + wrapper_len + MSG_HEADER_LEN ;
+
+	buf->prepare( total_len );
+	p = buf->tail();
+	PACK_HEADER(&header, p);
+	p += MSG_HEADER_LEN;	
+	
+	ret = wrapper->pack(p, wrapper_len );
 	if (ret < 0) return -1;
-	buf->flush_push(ret);
+	p += wrapper_len;
+	ret = pkt->pack(p, pl_len);
+	if (ret < 0) return -1;
+
+	buf->flush_push( total_len );
 	try_write(side);
 	
 	return 0;

@@ -9,6 +9,21 @@
 namespace axon {
 
 #define MAX_PROTO_LEN  32000
+#define MSG_HEADER_LEN 4
+#define UNPACK_HEADER(h, p)  (h)->proto = *(p) | *((p)+1) << 8; \
+	(h)->pl_len = *((p)+2) | *((p)+3) << 8;
+
+#define PACK_HEADER(h, p) *p = (h)->proto & 0xFF; \
+	*(p+1) = ((h)->proto >> 8) & 0xFF; \
+	*(p+2) = (h)->pl_len & 0xFF; \
+	*(p+3) = ((h)->pl_len >> 8) & 0xFF;
+	
+struct msg_header_t
+{
+	uint16_t proto;   //wrapper proto id
+	uint16_t pl_len;      //payload len
+};
+
 
 //base class of all message
 class proto_msg_t 
@@ -21,22 +36,6 @@ public:
 	virtual int cal_size() = 0;
 	virtual int unpack(char* p, uint32_t avail) = 0;
 	virtual int pack(char* p, uint32_t maxn) = 0;
-};
-
-//variable len payload_t
-struct pb_payload_t
-{
-	pb_payload_t() { 
-		proto=0; 
-		pl_len = 0;
-		data = NULL; 
-		from_unpack = 0;
-	}
-	char from_unpack;   //make sure the data is valid proto_msg_t
-	uint16_t proto;
-	uint16_t pl_len;    //payload len
-	char* data;         //when pack: convertion to proto_msg_t* 
-						//when unpack: point to temp buffer (never reference it elsewhere after packet unpack/processed )
 };
 
 struct raw_bytes_t {

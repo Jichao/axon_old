@@ -33,12 +33,12 @@ public:
 	EvPoller* get_poller();
 	void on_peer_close(int fd, int hid);
 	int close_connect(int hid);
-	static int on_mailbox_read(void* pobj, proto_msg_t *pb, int remain);
+	static void on_mailbox_read(void* pobj, msg_header_t header, char* p);
 
 private:
 	int send_worker_ctrl(pb_cgate_ctrl * msg);
 	int on_accept_new_connect(int sockfd, uint64_t ip, uint16_t port);
-	int process_worker_command(pb_cgate_ctrl *wrapper, int remain);
+	void process_worker_command(int proto, char *p, int remain);
 
 private:
 	//be careful: some var shared between main thread and worker thread 

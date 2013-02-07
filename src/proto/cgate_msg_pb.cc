@@ -12,9 +12,7 @@ namespace xpb {
 //don't call it after unpack for proto which has a payload field
 int pb_cgate_newconn::cal_size()
 {
-	uint32_t pl_len = 0;
-
-	return 18 + pl_len;
+	return 18 ;
 }
 
 //return actual shift size
@@ -27,11 +25,9 @@ int pb_cgate_newconn::unpack(char* p, uint32_t avail)
 	//little endian only (x86)
 	fd = *(int*)p;
 	p += 4;
-	_shift += 4;
 	//little endian only (x86)
 	hid = *(int*)p;
 	p += 4;
-	_shift += 4;
 
 	ip = *p | (*(p+1) << 8);
 	ip |= *(p+2) << 16 | (*(p+3) << 24);
@@ -39,12 +35,10 @@ int pb_cgate_newconn::unpack(char* p, uint32_t avail)
 	ip |= *p | (*(p+1) << 8);
 	ip |= *(p+2) << 16 | (*(p+3) << 24);
 	p += 4;
-	_shift += 4;
 	port = *(short*)p;
 	p += 2;
-	_shift += 2;
 
-	return _shift;
+	return _shift + _fl;
 }
 
 //return total shift size
@@ -59,11 +53,9 @@ int pb_cgate_newconn::pack(char* p, uint32_t avail)
 	//little endian only (x86)
 	*(int*)p = fd;
 	p += 4;
-	_shift += 4;
 	//little endian only (x86)
 	*(int*)p = hid;
 	p += 4;
-	_shift += 4;
 	*p++ = ip & 0xFF;
 	*p++ = (ip >> 8) & 0xFF;
 	*p++ = (ip >> 16) & 0xFF;
@@ -72,12 +64,10 @@ int pb_cgate_newconn::pack(char* p, uint32_t avail)
 	*p++ = (ip >> 40) & 0xFF;
 	*p++ = (ip >> 48) & 0xFF;
 	*p++ = (ip >> 56) & 0xFF;
-	_shift += 8;
 	*(short*)p = port;
 	p += 2;
-	_shift += 2;
 
-	return _shift;
+	return _shift + _fl;
 }
 
 
@@ -85,9 +75,7 @@ int pb_cgate_newconn::pack(char* p, uint32_t avail)
 //don't call it after unpack for proto which has a payload field
 int pb_worker_ctrl::cal_size()
 {
-	uint32_t pl_len = 0;
-
-	return 6 + pl_len;
+	return 6 ;
 }
 
 //return actual shift size
@@ -99,13 +87,11 @@ int pb_worker_ctrl::unpack(char* p, uint32_t avail)
 	if ( p == NULL || avail < _fl ) return -1;
 	cmd = *(short*)p;
 	p += 2;
-	_shift += 2;
 	//little endian only (x86)
 	lparam = *(int*)p;
 	p += 4;
-	_shift += 4;
 
-	return _shift;
+	return _shift + _fl;
 }
 
 //return total shift size
@@ -119,13 +105,11 @@ int pb_worker_ctrl::pack(char* p, uint32_t avail)
 	if ( p == NULL || avail < _fl) return -1;
 	*(short*)p = cmd;
 	p += 2;
-	_shift += 2;
 	//little endian only (x86)
 	*(int*)p = lparam;
 	p += 4;
-	_shift += 4;
 
-	return _shift;
+	return _shift + _fl;
 }
 
 
@@ -133,9 +117,7 @@ int pb_worker_ctrl::pack(char* p, uint32_t avail)
 //don't call it after unpack for proto which has a payload field
 int pb_worker_notify::cal_size()
 {
-	uint32_t pl_len = 0;
-
-	return 6 + pl_len;
+	return 6 ;
 }
 
 //return actual shift size
@@ -147,13 +129,11 @@ int pb_worker_notify::unpack(char* p, uint32_t avail)
 	if ( p == NULL || avail < _fl ) return -1;
 	cmd = *(short*)p;
 	p += 2;
-	_shift += 2;
 	//little endian only (x86)
 	lparam = *(int*)p;
 	p += 4;
-	_shift += 4;
 
-	return _shift;
+	return _shift + _fl;
 }
 
 //return total shift size
@@ -167,13 +147,11 @@ int pb_worker_notify::pack(char* p, uint32_t avail)
 	if ( p == NULL || avail < _fl) return -1;
 	*(short*)p = cmd;
 	p += 2;
-	_shift += 2;
 	//little endian only (x86)
 	*(int*)p = lparam;
 	p += 4;
-	_shift += 4;
 
-	return _shift;
+	return _shift + _fl;
 }
 
 

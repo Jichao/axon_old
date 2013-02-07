@@ -17,7 +17,6 @@ const int {{pkg_id_name}} = {{pkg_id}};
 {% for pname, pc in all_proto.items() %}
 const int {{pc.id_name}} = {{pc.proto_id}};{% endfor %}
 
-
 {% for pname, pc in all_proto.items() %}
 class pb_{{pname}} : public proto_msg_t
 {

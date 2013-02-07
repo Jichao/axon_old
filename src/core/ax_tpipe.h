@@ -16,7 +16,7 @@ namespace axon {
 //callback function.
 //don't reference pointer of "data" outside the callback function.
 //it will be invalid later. copy them if needed.
-typedef int (*pipe_cbfunc) (void* pobj, proto_msg_t *wrapper, int remain);
+typedef void (*pipe_cbfunc) (void* pobj, msg_header_t header, char* data);
 
 class tpipe_t : IFdEventReactor
 {
@@ -28,7 +28,7 @@ public:
 	int get_fd1() { return pinfo_[1].fd_; }  //b for worker thread
 
 	//write to tpipe
-	int write(int side, proto_msg_t* pkt);
+	int write(int side, int wrapper_type, proto_msg_t* wrapper, proto_msg_t* pkt);
 
 	void try_write(int side);
 	virtual void on_ev_read(int fd);

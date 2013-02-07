@@ -24,6 +24,10 @@ int EpollPoller::add_event(int fd, int flag)
 {
 	struct epoll_event wep;
 	struct epoll_event rep;
+	PollerEntry *pe;
+	if (fd < 0 || fd > (int)max_fds_) return AX_RET_ERROR;
+
+	pe = &entry_[fd];
 
 	if (flag & EV_READ) {
 		rep.events = EPOLLIN;
@@ -80,6 +84,7 @@ int EpollPoller::do_poll()
 	int events;
 	int fd;
 	struct epoll_event *ep;
+	PollerEntry *pe;
 
 	if (timetick_ > 0) {
 		events = epoll_wait(epoll_fd_, event_list_, max_fds_, timetick_);
@@ -91,7 +96,7 @@ int EpollPoller::do_poll()
 	for (int i=0; i<events; i++) {
 		ep = &event_list_[i];
 		fd = ep->data.fd;
-		pe = entry_[fd];
+		pe = &entry_[fd];
 		if (pe->status != FDS_ACTIVE) {
 			del_event(fd, EV_READ | EV_WRITE);
 			continue;

@@ -80,36 +80,27 @@ int ClientMgr::start_worker()
 }
 
 //static callback function
-int ClientMgr::on_mailbox_read(void *pobj, proto_msg_t *pb, int remain)
+void ClientMgr::on_mailbox_read(void *pobj, msg_header_t header, char* p)
 {
-	int shift = 0;
+	int remain;
 	int ret;
-	pb_wrapper* wrapper = (pb_wrapper*)pb;
-	char* data = wrapper->pl.data;
+	int wrapper_type;
 	ClientMgr *pmgr = (ClientMgr*)pobj;
-	pb_cgate_ctrl msg_ct;
-	pb_client_req msg_cli_recv;
 
-	switch(wrapper->pl.proto)
-	{
-	case PT_CGATE_CTRL:
-		ret = msg_ct.unpack(data, remain);
-		if (ret < 0) return -1;
-		shift += ret;
-		ret = pmgr->process_worker_command(&msg_ct, remain - ret);
-		if (ret < 0) return -1;
-		shift += ret;
-		break;
-	
-	case PT_CLIENT_REQ:
-		ret = msg_cli_recv.unpack(data, remain);
-		if (ret < 0) return -1;
-		shift += ret;
-		break;
-	default: 
-		return -1;
-	}
-	return shift;
+	wrapper_type = header.proto;
+	remain = header.pl_len;
+	if (wrapper_type == PT_CGATE_CTRL) {
+		pb_cgate_ctrl ctrl;
+		ret = (&ctrl)->unpack(p, remain);
+		if (ret < 0) return;
+		pmgr->process_worker_command(ctrl.cmd, p + ret, remain - ret);
+
+	} else if (wrapper_type == PT_CLIENT_REQ) {
+		pb_client_req req;
+		ret = (&req)->unpack(p, remain);
+		if (ret < 0) return;
+
+	} 
 }
 
 int ClientMgr::listen()
@@ -170,7 +161,8 @@ int ClientMgr::on_accept_new_connect(int sockfd, uint64_t ip, uint16_t port)
 {
 	int load, select = 0;
 	tpipe_t *mailbox;
-	pb_cgate_newconn msg;
+	pb_cgate_newconn pkt_conn;
+	pb_cgate_ctrl pkt_ctrl;
 	//accept
 	RT_ASSERT(inited_ != 0);
 	
@@ -190,16 +182,13 @@ int ClientMgr::on_accept_new_connect(int sockfd, uint64_t ip, uint16_t port)
 
 	mailbox = &(workers_[select].mailbox);
 
-	msg.fd = sockfd;
-	msg.hid = (select << HID_THR_BITS) | hid_;
-	msg.ip = ip;
-	msg.port = port;
+	pkt_conn.fd = sockfd;
+	pkt_conn.hid = (select << HID_THR_BITS) | hid_;
+	pkt_conn.ip = ip;
+	pkt_conn.port = port;
 
-	pb_wrapper pkt_wrap;
-	pkt_wrap.pl.proto = PT_CGATE_NEWCONN;
-	pkt_wrap.pl.data = (char*)&msg;
-
-	mailbox->write(0, &pkt_wrap);
+	pkt_ctrl.cmd = PT_CGATE_NEWCONN;
+	mailbox->write(0, PT_CGATE_CTRL, &pkt_ctrl, &pkt_conn);
 
 	return AX_RET_OK;
 }
@@ -224,17 +213,11 @@ int ClientMgr::close_connect(int hid)
 	return AX_RET_OK;
 }
 
-int ClientMgr::process_worker_command(pb_cgate_ctrl *wrapper, int remain)
+void ClientMgr::process_worker_command(int proto, char* p, int remain)
 {
-	int shift = 0;
-	switch (wrapper->pl.proto)
-	{
-	case PT_WORKER_NOTIFY:
-		break;
-	default:
-		break;
+	if (proto == PT_WORKER_NOTIFY) {
 
-	}	
+	}
+	
 
-	return shift;
 }

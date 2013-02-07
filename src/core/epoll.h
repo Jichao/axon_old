@@ -18,7 +18,7 @@ public:
 
 	virtual int add_event(int fd, int flag);
 	virtual int del_event(int fd, int flag);
-	virtual int do_poll(int timeout);
+	virtual int do_poll();
 
 private:
 	int epoll_fd_;
