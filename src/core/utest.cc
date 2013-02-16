@@ -11,7 +11,6 @@ uint32_t UTest::count = 0;
 UTest::UTest(UTestFunc* func, const char* file, const char* name)
 	: func_(func), file_(file), name_(name), next_(NULL)
 {
-	debug_log("Utest creator %s", name);
 	next_ = head;
 	head = this;
 	++UTest::count;

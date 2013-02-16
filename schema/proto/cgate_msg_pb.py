@@ -31,15 +31,48 @@ PROTO_DEF = {
 },
 
 "worker_notify" : {
-	"proto_id": 2, 
+	"proto_id": 3, 
 	"desc": "new connection",
 	"func": "",
 	"body": [
 		("cmd", INT16),
 		("lparam", INT32),
-	]
+		("wparam", INT16), 
+	],
+	"const": {
+		"WORKER_START_OK": 1, 
+
+	}
 },
 
+"conn_notify" : {
+	"proto_id": 4,
+	"desc": "connection notify by worker",
+	"func": "",
+	"body": [
+		("fd", INT32),
+		("hid", INT32),
+		("action", INT8),	
+	],
+	"const": {
+		"PEER_CLOSE": 1, 
+		"PEER_TIMEOUT": 2, 
+	}
+},
+
+"conn_ctrl" : {
+	"proto_id": 5,
+	"desc": "connection ctrl by main thread",
+	"func": "",
+	"body": [
+		("fd", INT32),
+		("hid", INT32),
+		("action", INT8),	
+	],
+	"const": {
+		"DO_CLOSE": 1, 
+	}
+},
 
 }
 

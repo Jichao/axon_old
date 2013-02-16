@@ -14,7 +14,7 @@ using namespace axon;
 
 #define HID_THR_BITS  26
 #define HID_THR_MASK 0x3F
-
+#define THR_IDX_FROM_HID(h) (((h) >> HID_THR_BITS) & HID_THR_MASK)
 
 class ConnectWorker: public IConnectHandler
 {
@@ -45,12 +45,13 @@ private:
 	void wait_close(Connect*);
 	virtual void on_read(Connect* conn);
 	virtual void on_write(Connect* conn);
-	void decrypt_client_data(Connect* conn);
 	int process_data(Connect* conn);
 
-	void send_worker_command(proto_msg_t * msg);
+	void send_worker_command(int cmd, proto_msg_t * msg);
 	void process_worker_command(int proto, char* p, int remain);
-
+	void process_conn_ctrl(char *p, int remain);
+public:
+	int idx_;
 private:
 	EvPoller *poller_;
 	ConnectContainer *container_;

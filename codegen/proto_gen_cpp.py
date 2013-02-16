@@ -127,6 +127,7 @@ def gen_cpp_body(pname, vdef):
 	pack_str = ''
 	len_str = ''
 	var_len = ''
+	enum_str = ''
 	fixed_len = 0
 	ftype = 0
 	#cal fixed len
@@ -167,4 +168,8 @@ def gen_cpp_body(pname, vdef):
 	vdef['decl_field'] = decl_field
 	vdef['init_field'] = init_field
 	vdef['id_name'] = 'PT_' + pname.upper()
+	vdef['enum'] = ''
+	if "const" in vdef:
+		for k, v in vdef['const'].items():
+			vdef['enum'] += '%s = %d,\n\t\t' % (k, v)
 

@@ -5,8 +5,9 @@
 
 namespace axon {
 
-FdPollerBase::FdPollerBase(uint32_t maxn, int timetick) : timetick_(timetick_)
+FdPollerBase::FdPollerBase(uint32_t maxn, int timetick) : timetick_(timetick)
 {
+	RT_ASSERT(timetick_ > 0);
 	timer_ = new EvTimer(timetick_);
 	pending_new_ = new HashMapInt(10);
 	retired_ = new int[maxn];   
@@ -125,7 +126,6 @@ int FdPollerBase::process()
 	timer_->timer_routine();
 	//all logic implement in do_poll()
 	do_poll();
-
 	//close retired fd
 	for(i=0; i<retired_sz_; i++) {
 		fd = retired_[i];

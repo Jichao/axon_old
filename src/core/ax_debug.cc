@@ -67,8 +67,8 @@ void RawLogger::vlog(const char* fmt, va_list arg)
 	snprintf(path_buf, sizeof(path_buf), "%s/%s/%s", path_root, path_, file_);
 	fp = fopen(path_buf, "a+");
 	if (NULL == fp) {
-		//perror(path_buf);
-		//abort();
+		perror(path_buf);
+		abort();
 		return;
 	}
 

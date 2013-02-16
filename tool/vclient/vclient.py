@@ -60,6 +60,7 @@ class VClient(object):
 
 if __name__=='__main__':
 	c = VClient()
-	c.connect('127.0.0.1',8883)
+	c.connect('127.0.0.1',1234)
 	while FDS_NULL != c.fd_state():
 		c.process()	
+		time.sleep(0.1)

@@ -172,7 +172,7 @@ UTEST(queue_t)
 {
 	char word[] = "hello!";
 	var_msg_t *p;
-	queue_t g(100);
+	queue_t g(10000);
 
 	g.push(sizeof(word), 1, (void*)word);
 	p = g.back();

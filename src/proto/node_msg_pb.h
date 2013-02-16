@@ -23,6 +23,10 @@ const int PT_CGATE_CTRL = 1;
 class pb_client_unicast : public proto_msg_t
 {
 public:
+	enum {
+		
+	};
+public:
 	static const int proto_id = 3;
 	pb_client_unicast () {
 		hid = 0;
@@ -44,6 +48,10 @@ public:
 class pb_client_req : public proto_msg_t
 {
 public:
+	enum {
+		
+	};
+public:
 	static const int proto_id = 2;
 	pb_client_req () {
 		hid = 0;
@@ -64,6 +72,10 @@ public:
 
 class pb_cgate_ctrl : public proto_msg_t
 {
+public:
+	enum {
+		
+	};
 public:
 	static const int proto_id = 1;
 	pb_cgate_ctrl () {

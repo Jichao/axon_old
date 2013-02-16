@@ -43,6 +43,7 @@ engine: cgate
 
 cgate: core $(CGATE_OBJS)
 	$(CC) -g3 -pthread -o $(BIN_DIR)/cgate $(addprefix $(OBJ_DIR)/, $(CGATE_OBJS)) $(OBJ_DIR)/$(CORE_LIB) $(EXTRA_LIB)
+	-mv bin/cgate run/cgate
 
 core: environ $(CORE_OBJS) $(PROTO_OBJS)
 	$(AR) -r $(OBJ_DIR)/$(CORE_LIB) $(addprefix $(OBJ_DIR)/, $(CORE_OBJS)) $(addprefix $(OBJ_DIR)/, $(PROTO_OBJS))

@@ -126,6 +126,7 @@ int EvTimer::del_timer(int handle)
 void EvTimer::timer_routine()
 {
 	tm_now_ = get_timenow();	
+	//DBG_WATCHV("tm_now_=%llu tm_slap_=%llu", tm_now_, tm_slap_);
 	if (tm_now_ > tm_slap_ + 1000*60)
 	{
 		//miss process tick if routine block longer than 60s
@@ -197,12 +198,13 @@ void EvTimer::process_tick()
 void _T_timer_cb(int handle, void* data)
 {
 	EvTimer *timer = (EvTimer*)data;
+	DBG_WATCH("trig timer");
 	timer->add_timer(_T_timer_cb, timer, 1000);
 }
 
 UTEST(EvTimer)
 {
-	EvTimer timer(100); //100 ms per tick
+	EvTimer timer(1000); //1000 ms per tick
 	int h2 = timer.add_timer(_T_timer_cb, &timer, 1024 * 100 * 10);
 	int h3 = timer.add_timer(_T_timer_cb, &timer, 1024 * 1024 * 10);
 

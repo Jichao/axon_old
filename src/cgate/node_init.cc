@@ -76,7 +76,7 @@ int NodeConf::load_node_conf(int is_reload)
 	std::ifstream fs_conf(g_conf_file, std::ifstream::binary);
 	bool parse_ok = reader.parse(fs_conf, root);
 	if (!parse_ok) {
-		//printf("parse fail. %s", reader.getFormatedErrorMessages().c_str());
+		printf("parse fail. %s", reader.getFormatedErrorMessages().c_str());
 		return -1;
 	}
 

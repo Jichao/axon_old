@@ -8,5 +8,4 @@ extern int g_node_state;   //node state
 #define NODE_RUNNING 1
 #define NODE_BEING_CLOSE 2
 
-
 #endif

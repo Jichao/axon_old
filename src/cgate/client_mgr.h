@@ -13,6 +13,7 @@ using namespace xpb;
 
 struct worker_init_t
 {
+	int idx;
 	uint32_t max_conn;
 	tpipe_t *mailbox;
 };
@@ -36,9 +37,12 @@ public:
 	static void on_mailbox_read(void* pobj, msg_header_t header, char* p);
 
 private:
-	int send_worker_ctrl(pb_cgate_ctrl * msg);
+	void send_worker_ctrl(int cmd, int idx, proto_msg_t * msg);
 	int on_accept_new_connect(int sockfd, uint64_t ip, uint16_t port);
-	void process_worker_command(int proto, char *p, int remain);
+
+	//cgate ctrl proto handler
+	void process_worker_command(char *p, int remain);
+	void process_conn_notify(char *p, int remain);
 
 private:
 	//be careful: some var shared between main thread and worker thread 

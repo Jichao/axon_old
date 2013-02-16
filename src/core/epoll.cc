@@ -59,6 +59,8 @@ int EpollPoller::del_event(int fd, int flag)
 	
 	if (fd < 0 || fd >= max_fds_) return AX_RET_ERROR;
 
+	pe = &entry_[fd];
+
 	if (flag & EV_READ) {
 		rep.events = EPOLLIN;
 		rep.data.fd = fd;

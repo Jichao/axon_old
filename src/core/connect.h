@@ -46,8 +46,11 @@ public:
 	~Connect();
 	int init(IConnectHandler* mgr, int fd, int rsize, int wsize);
 	int read();
+	int write();
 	bool is_active() { return fd_ > 0 && mgr_ != NULL && peer_port_ > 0;}
-
+	void set_status(int status) {
+		status_ = status;
+	}
 	virtual void on_ev_read(int fd);
 	virtual void on_ev_write(int fd);
 

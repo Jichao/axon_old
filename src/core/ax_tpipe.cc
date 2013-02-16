@@ -63,11 +63,11 @@ void tpipe_t::on_ev_read(int fd)
 	int remain;
 	buffer_t* buf;
 	char* p;
-
+	
 	msg_header_t header;
 	if (fd == pinfo_[0].fd_) {
 		side = 0;
-	} else if (fd == pinfo_[0].fd_) {
+	} else if (fd == pinfo_[1].fd_) {
 		side = 1;
 	} else {
 		//error
@@ -89,6 +89,7 @@ void tpipe_t::on_ev_read(int fd)
 		return;
 	}
 	remain = buf->len();
+
 	while ( remain > MSG_HEADER_LEN ) {
 		p = buf->data();	
 		UNPACK_HEADER(&header, p);	
@@ -113,7 +114,7 @@ void tpipe_t::try_write(int side)
 	RT_ASSERT(side == 0 || side == 1);
    	fd = pinfo_[side].fd_;
 	buf = pinfo_[side].wbuf_;
-	nbytes = ::write(fd, buf, buf->len());	
+	nbytes = ::write(fd, buf->data(), buf->len());	
 	if (nbytes < 0) {
 		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK) return;
 		pinfo_[side].poller_->wait_close(pinfo_[side].fd_);
@@ -162,15 +163,15 @@ int tpipe_t::write(int side, int wrapper_type, proto_msg_t* wrapper, proto_msg_t
 	}
 	pl_len = pkt->cal_size();
 	wrapper_len = wrapper->cal_size();
-	header.pl_len = wrapper->cal_size() + pkt->cal_size(); 
+	header.pl_len = wrapper_len + pl_len; 
 	header.proto = wrapper_type;
 	total_len = pl_len + wrapper_len + MSG_HEADER_LEN ;
-
 	buf->prepare( total_len );
 	p = buf->tail();
 	PACK_HEADER(&header, p);
+
 	p += MSG_HEADER_LEN;	
-	
+
 	ret = wrapper->pack(p, wrapper_len );
 	if (ret < 0) return -1;
 	p += wrapper_len;

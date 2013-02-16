@@ -21,6 +21,10 @@ const int {{pc.id_name}} = {{pc.proto_id}};{% endfor %}
 class pb_{{pname}} : public proto_msg_t
 {
 public:
+	enum {
+		{{pc.enum}}
+	};
+public:
 	static const int proto_id = {{pc.proto_id}};
 	pb_{{pname}} () {
 		{{ pc.init_field }}
