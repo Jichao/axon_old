@@ -24,8 +24,8 @@ PROTO_DEF = {
 	"desc": "client packet wrapper",
 	"body": [
 		("hid", INT32),
-		("main_proto", INT16),
-		("sub_proto", INT16),
+		("object_id", INT16),
+		("method_id", INT16),
 	]
 },
 
@@ -34,8 +34,8 @@ PROTO_DEF = {
 	"desc": "wrapper of unicast data",
 	"body": [
 		("hid", INT32),
-		("main_proto", INT16),
-		("sub_proto", INT16),
+		("object_id", INT16),
+		("method_id", INT16),
 	]
 }
 
