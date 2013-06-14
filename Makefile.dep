@@ -5,20 +5,22 @@
 CORE_DEPS_LOCAL = stdheader.h ax_debug.h utest.h ax_buffer.h ax_string.h ax_timer.h \
 				  fd_poller.h kqueue.h epoll.h\
 				  ax_hashmap.h mem_pool.h connect.h  os_misc.h ax_queue.h \
-				  ax_thread.h ax_tpipe.h
+				  ax_thread.h ax_tpipe.h \
+				  node_base.h
 
 CORE_OBJS_LOCAL = ax_debug.o utest.o ax_buffer.o ax_string.o ax_timer.o \
 				  fd_poller.o kqueue.o epoll.o\
 				  mem_pool.o connect.o os_misc.o ax_queue.o ax_thread.o \
-				  ax_tpipe.o
+				  ax_tpipe.o \
+				  node_base.o
 
 #add path prefix
 CORE_OBJS = $(addprefix core/, $(CORE_OBJS_LOCAL))
 CORE_DEPS = $(addprefix src/core/, $(CORE_DEPS_LOCAL))
 
 
-CGATE_DEPS_LOCAL = node_init.h
-CGATE_OBJS_LOCAL = main.o node_init.o
+PGATE_DEPS_LOCAL =
+PGATE_OBJS_LOCAL = main.o 
 
-CGATE_OBJS = $(addprefix cgate/, $(CGATE_OBJS_LOCAL))
-CGATE_DEPS = $(addprefix src/cgate/, $(CGATE_DEPS_LOCAL))
+PGATE_OBJS = $(addprefix pgate/, $(PGATE_OBJS_LOCAL))
+PGATE_DEPS = $(addprefix src/pgate/, $(PGATE_DEPS_LOCAL))

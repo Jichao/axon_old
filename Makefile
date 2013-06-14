@@ -38,12 +38,11 @@ clean:
 	-find objs/ -name "*.o" -print | xargs rm -f
 	-find objs/ -name "*.a" -print | xargs rm -f
 
-engine: cgate 
+engine: pgate 
 	@echo "make engine done!!"
 
-cgate: core $(CGATE_OBJS)
-	$(CC) -g3 -pthread -o $(BIN_DIR)/cgate $(addprefix $(OBJ_DIR)/, $(CGATE_OBJS)) $(OBJ_DIR)/$(CORE_LIB) $(EXTRA_LIB)
-	-mv bin/cgate run/cgate
+pgate: core $(PGATE_OBJS)
+	$(CC) -g3 -pthread -o $(BIN_DIR)/pgate $(addprefix $(OBJ_DIR)/, $(PGATE_OBJS)) $(OBJ_DIR)/$(CORE_LIB) $(EXTRA_LIB)
 
 core: environ $(CORE_OBJS) $(PROTO_OBJS)
 	$(AR) -r $(OBJ_DIR)/$(CORE_LIB) $(addprefix $(OBJ_DIR)/, $(CORE_OBJS)) $(addprefix $(OBJ_DIR)/, $(PROTO_OBJS))
@@ -56,7 +55,7 @@ test:
 environ:
 	-mkdir -p $(OBJ_DIR)/core
 	-mkdir -p $(OBJ_DIR)/test
-	-mkdir -p $(OBJ_DIR)/cgate
+	-mkdir -p $(OBJ_DIR)/pgate
 	-mkdir -p $(OBJ_DIR)/master
 	-mkdir -p $(OBJ_DIR)/proto
 	-mkdir -p $(BIN_DIR)
@@ -67,7 +66,7 @@ environ:
 core/%.o : src/core/%.cc $(CORE_DEPS)
 	$(CC) $(INCLUDES) $(OPTIMIZE) $(OS_SPECIAL) -o $(OBJ_DIR)/$@ -c $<
 
-cgate/%.o : src/cgate/%.cc $(CGATE_DEPS)
+pgate/%.o : src/pgate/%.cc $(PGATE_DEPS)
 	$(CC) $(INCLUDES) $(OPTIMIZE) $(OS_SPECIAL) -o $(OBJ_DIR)/$@ -c $<
 
 proto/%.o : src/proto/%.cc $(PROTO_DEPS)
