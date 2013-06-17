@@ -9,6 +9,7 @@ endif
 
 OBJ_DIR = ../objs
 CORE_LIB = libax_core.a
+EXTRA_LIB = ../depends/lib/libjson.a
 INCLUDES = -I../src/ -L ../objs/
 OPTIMIZE = -g3 -DRUN_INTERNAL
 LINK_ALL = -Wl,--whole-archive
@@ -23,4 +24,4 @@ test: tc_core
 	@echo "finish build test"
 
 tc_core: tc_core.o
-	g++ $(INCLUDES) $(OPTIMIZE) -pthread -o tc_core $(OBJ_DIR)/tc_core.o $(LINK_ALL) -lax_core $(DONT_LINK_ALL)
+	g++ $(INCLUDES) $(OPTIMIZE) -pthread -o tc_core $(OBJ_DIR)/tc_core.o $(LINK_ALL) -lax_core $(DONT_LINK_ALL) $(EXTRA_LIB)

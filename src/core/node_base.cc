@@ -1,5 +1,6 @@
 
 #include "node_base.h"
+#include "node_common.h"
 #include <core/ax_core.h>
 #include <string>
 #include <fstream>
@@ -46,6 +47,7 @@ int NodeBase::init_basic(Json::Value &root)
 	logpath = root.get("logpath", "./").asString();
 	timetick_ = root.get("timetick", 100).asInt();
 	nodenum_ = root.get("nodenum", 2).asInt();
+	return AX_RET_OK;
 }
 
 //init basic net poller(without client port)
@@ -56,11 +58,12 @@ int NodeBase::init_inner_net_conf(Json::Value &root)
 	if (!net.isObject()) return AX_RET_ERROR;
 
 	inner_port_ = root.get("inner_port", 8883).asInt();
+	return AX_RET_OK;
 }
 
 int NodeBase::init_outer_net_conf(Json::Value &root)
 {
-
+	return AX_RET_OK;
 }
 
 int NodeBase::init_config(Json::Value &root)
@@ -74,21 +77,23 @@ int NodeBase::init_config(Json::Value &root)
 	if (ret == AX_RET_ERROR) return ret;
 
 	poller_ = new EvPoller(max_poller_fd_, timetick_);
+	return ret;
 }
 
 int NodeBase::reload_config(Json::Value &root)
 {
-
+	return AX_RET_OK;
 }
 
 int NodeBase::run()
 {
-
+	return 0;
 }
 
 int NodeBase::terminate()
 {
 	abort();
+	return 0;
 }
 
 

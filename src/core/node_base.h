@@ -11,10 +11,6 @@ namespace axon
 {
 
 
-const static int INTERNAL_HOSTNUM = 89;
-const static int MAX_NODE_CNT = 100;  //max node count in one cluster
-
-
 enum NodeType {
 	T_NODE_MASTER = 1,
 	T_NODE_CGATE = 2,
@@ -49,8 +45,8 @@ public:
 	virtual int terminate();
 
 protected:
-	int node_type_;   //Node类型
-	int node_state_;  //运行状态 
+	int node_type_; 
+	int node_state_;
 	EvPoller *poller_;   //main event poller
 
 public:
